@@ -3,14 +3,18 @@ package com.multidrive.app.presentation.accounts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.multidrive.app.data.auth.GoogleOAuthHelper
 import com.multidrive.app.domain.model.Account
 import com.multidrive.app.presentation.viewmodel.AddAccountState
 import com.multidrive.app.presentation.viewmodel.AccountsViewModel
@@ -22,6 +26,7 @@ fun AccountsScreen(
     onAddAccountClick: () -> Unit = {},
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val accounts by viewModel.accounts.collectAsState(initial = emptyList())
     val addState by viewModel.addAccountState.collectAsState()
 
@@ -65,7 +70,8 @@ fun AccountsScreen(
             ExtendedFloatingActionButton(
                 onClick = { showAddDialog = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Add Google Drive") }
+                text = { Text("Add Google Drive") },
+                modifier = Modifier.navigationBarsPadding()
             )
         }
     ) { padding ->
@@ -120,7 +126,7 @@ fun AccountsScreen(
             }
         }
 
-        // Add Account Dialog
+        // Add Account Dialog with responsive height and Google OAuth Browser launch
         if (showAddDialog) {
             AlertDialog(
                 onDismissRequest = {
@@ -131,10 +137,27 @@ fun AccountsScreen(
                 title = { Text("Connect Google Drive") },
                 text = {
                     Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // 1-Click Google OAuth Browser Authenticator
+                        OutlinedButton(
+                            onClick = {
+                                GoogleOAuthHelper.launchGoogleOAuthBrowser(context)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.OpenInBrowser, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Open Google Sign-In (Browser)")
+                        }
+
+                        HorizontalDivider()
+
                         Text(
-                            text = "Enter your Google account email and OAuth Access Token to connect to Google Drive REST API.",
+                            text = "Enter your Google account email and OAuth Access Token to connect:",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

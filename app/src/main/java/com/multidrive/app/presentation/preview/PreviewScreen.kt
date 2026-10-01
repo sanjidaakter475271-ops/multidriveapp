@@ -62,5 +62,5 @@ fun PreviewScreen(
                 }
             }
         }
-    )
+    }
 }

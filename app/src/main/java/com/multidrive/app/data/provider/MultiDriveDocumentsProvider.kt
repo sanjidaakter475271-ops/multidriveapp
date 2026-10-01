@@ -189,12 +189,9 @@ class MultiDriveDocumentsProvider : DocumentsProvider() {
 
     private fun addFileRow(cursor: MatrixCursor, accountId: Int, file: FileMetaEntity) {
         val mimeType = if (file.isFolder) Document.MIME_TYPE_DIR else file.mimeType
-        val flags = buildInt {
-            if (file.isFolder) add(Document.FLAG_DIR_SUPPORTS_CREATE)
-            if (!file.isFolder) add(Document.FLAG_SUPPORTS_WRITE)
-            add(Document.FLAG_SUPPORTS_DELETE)
-            add(Document.FLAG_SUPPORTS_RENAME)
-        }
+        var flags = Document.FLAG_SUPPORTS_DELETE or Document.FLAG_SUPPORTS_RENAME
+        if (file.isFolder) flags = flags or Document.FLAG_DIR_SUPPORTS_CREATE
+        if (!file.isFolder) flags = flags or Document.FLAG_SUPPORTS_WRITE
 
         cursor.newRow().apply {
             add(Document.COLUMN_DOCUMENT_ID, fileDocId(accountId, file.driveFileId))
@@ -205,11 +202,4 @@ class MultiDriveDocumentsProvider : DocumentsProvider() {
             add(Document.COLUMN_SIZE, if (file.isFolder) null else file.size)
         }
     }
-}
-
-/** Helper to build a flag Int from multiple flag additions. */
-private fun buildInt(block: MutableList<Int>.() -> Unit): Int {
-    val list = mutableListOf<Int>()
-    list.block()
-    return list.fold(0) { acc, flag -> acc or flag }
 }

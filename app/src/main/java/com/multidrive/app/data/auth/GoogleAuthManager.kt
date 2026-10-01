@@ -1,35 +1,20 @@
 package com.multidrive.app.data.auth
 
 import android.content.Context
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.Scope
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Manages Google account token storage.
+ * Authentication itself is handled by Credential Manager (androidx.credentials)
+ * in MainActivity; this class only provides token persistence helpers.
+ */
 @Singleton
 class GoogleAuthManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val secureTokenStore: SecureTokenStore
 ) {
-    private val driveScope = Scope("https://www.googleapis.com/auth/drive")
-
-    val gso: GoogleSignInOptions by lazy {
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
-            .requestProfile()
-            .requestScopes(driveScope)
-            .build()
-    }
-
-    fun getSignInClient() = GoogleSignIn.getClient(context, gso)
-
-    fun getLastSignedInAccount(): GoogleSignInAccount? {
-        return GoogleSignIn.getLastSignedInAccount(context)
-    }
-
     fun saveAccountToken(email: String, token: String) {
         secureTokenStore.saveToken("token_$email", token)
     }

@@ -12,7 +12,7 @@ class ListFilesUseCase @Inject constructor(
     private val accountDao: AccountDao
 ) {
     operator fun invoke(parentId: String? = null): Flow<List<DriveFile>> {
-        val filesFlow = fileMetaDao.getFilesByParent(parentId)
+        val filesFlow = if (parentId == null) fileMetaDao.getRootFiles() else fileMetaDao.getFilesByParent(parentId)
         val accountsFlow = accountDao.getAllAccounts()
 
         return combine(filesFlow, accountsFlow) { files, accounts ->

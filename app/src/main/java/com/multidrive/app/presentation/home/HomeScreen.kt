@@ -1,5 +1,10 @@
 package com.multidrive.app.presentation.home
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,11 +23,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.multidrive.app.domain.model.DriveFile
 import com.multidrive.app.presentation.components.FileGridCard
 import com.multidrive.app.presentation.components.FileRow
+import com.multidrive.app.presentation.viewmodel.ActionState
 import com.multidrive.app.presentation.viewmodel.HomeUiState
 import com.multidrive.app.presentation.viewmodel.HomeViewModel
 
@@ -35,16 +42,53 @@ fun HomeScreen(
     onNavigateToAccounts: () -> Unit = {},
     onNavigateToUpload: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val actionState by viewModel.actionState.collectAsState()
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedTab by remember { mutableIntStateOf(0) } // 0: My Drive, 1: Computers
-    var isGridView by remember { mutableStateOf(true) } // Toggle Grid vs List
+    var isGridView by remember { mutableStateOf(true) }
     var sortAscending by remember { mutableStateOf(true) }
     var showFabMenu by remember { mutableStateOf(false) }
+
+    // Dialog States
+    var selectedFileForRename by remember { mutableStateOf<DriveFile?>(null) }
+    var renameInput by remember { mutableStateOf("") }
+
+    var selectedFileForDelete by remember { mutableStateOf<DriveFile?>(null) }
+    var sharedLinkToDisplay by remember { mutableStateOf<String?>(null) }
+
     var showCreateFolderDialog by remember { mutableStateOf(false) }
     var folderNameInput by remember { mutableStateOf("") }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // System File Picker for uploading real files
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            viewModel.uploadFileFromUri(it)
+        }
+    }
+
+    LaunchedEffect(actionState) {
+        when (val state = actionState) {
+            is ActionState.Success -> {
+                snackbarHostState.showSnackbar(state.message)
+                viewModel.resetActionState()
+            }
+            is ActionState.Error -> {
+                snackbarHostState.showSnackbar("Error: ${state.message}")
+                viewModel.resetActionState()
+            }
+            else -> {}
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column(
                 modifier = Modifier
@@ -80,7 +124,7 @@ fun HomeScreen(
                                 unfocusedBorderColor = Color.Transparent
                             )
                         )
-                        IconButton(onClick = { /* AI Assistant feature */ }) {
+                        IconButton(onClick = { /* AI Assistant */ }) {
                             Icon(
                                 imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = "AI Assistant",
@@ -132,7 +176,6 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Sort order button
                     FilterChip(
                         selected = false,
                         onClick = { sortAscending = !sortAscending },
@@ -146,7 +189,6 @@ fun HomeScreen(
                         }
                     )
 
-                    // View toggle buttons (List vs Grid)
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
@@ -182,16 +224,14 @@ fun HomeScreen(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Secondary FAB (Scan/Camera)
                 SmallFloatingActionButton(
-                    onClick = onNavigateToUpload,
+                    onClick = { filePickerLauncher.launch("*/*") },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 ) {
-                    Icon(Icons.Default.PhotoCamera, contentDescription = "Scan")
+                    Icon(Icons.Default.PhotoCamera, contentDescription = "Scan / Upload")
                 }
 
-                // Primary FAB (+)
                 FloatingActionButton(
                     onClick = { showFabMenu = true },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -270,7 +310,6 @@ fun HomeScreen(
                         }
                     } else {
                         if (isGridView) {
-                            // 2-column Grid View matching Screenshot 1
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(2),
                                 modifier = Modifier
@@ -284,25 +323,38 @@ fun HomeScreen(
                                         file = file,
                                         accountEmail = file.accountEmail,
                                         onFileClick = onFileClick,
-                                        onRename = { /* Rename Dialog */ },
-                                        onDelete = { viewModel.trashFile(file.id) },
-                                        onShare = { /* Share Link */ },
-                                        onDownload = { /* Trigger Download */ }
+                                        onRename = {
+                                            selectedFileForRename = file
+                                            renameInput = file.name
+                                        },
+                                        onDelete = { selectedFileForDelete = file },
+                                        onShare = {
+                                            viewModel.shareFile(file) { link ->
+                                                sharedLinkToDisplay = link
+                                            }
+                                        },
+                                        onDownload = { /* Download action */ }
                                     )
                                 }
                             }
                         } else {
-                            // 1-column List View
                             LazyColumn(modifier = Modifier.fillMaxSize()) {
                                 items(filteredFiles) { file ->
                                     FileRow(
                                         file = file,
                                         accountEmail = file.accountEmail,
                                         onFileClick = onFileClick,
-                                        onRename = { /* Rename Dialog */ },
-                                        onDelete = { viewModel.trashFile(file.id) },
-                                        onShare = { /* Share Link */ },
-                                        onDownload = { /* Trigger Download */ }
+                                        onRename = {
+                                            selectedFileForRename = file
+                                            renameInput = file.name
+                                        },
+                                        onDelete = { selectedFileForDelete = file },
+                                        onShare = {
+                                            viewModel.shareFile(file) { link ->
+                                                sharedLinkToDisplay = link
+                                            }
+                                        },
+                                        onDownload = { /* Download action */ }
                                     )
                                     HorizontalDivider()
                                 }
@@ -325,7 +377,7 @@ fun HomeScreen(
                             leadingContent = { Icon(Icons.Default.UploadFile, contentDescription = null) },
                             modifier = Modifier.clickable {
                                 showFabMenu = false
-                                onNavigateToUpload()
+                                filePickerLauncher.launch("*/*")
                             }
                         )
                         ListItem(
@@ -371,6 +423,7 @@ fun HomeScreen(
                 confirmButton = {
                     Button(
                         onClick = {
+                            viewModel.createFolder(folderNameInput.trim())
                             showCreateFolderDialog = false
                             folderNameInput = ""
                         },
@@ -382,6 +435,101 @@ fun HomeScreen(
                 dismissButton = {
                     TextButton(onClick = { showCreateFolderDialog = false }) {
                         Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Rename File Dialog
+        selectedFileForRename?.let { file ->
+            AlertDialog(
+                onDismissRequest = { selectedFileForRename = null },
+                title = { Text("Rename") },
+                text = {
+                    OutlinedTextField(
+                        value = renameInput,
+                        onValueChange = { renameInput = it },
+                        label = { Text("Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.renameFile(file, renameInput.trim())
+                            selectedFileForRename = null
+                        },
+                        enabled = renameInput.isNotBlank()
+                    ) {
+                        Text("Rename")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { selectedFileForRename = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Delete Confirmation Dialog
+        selectedFileForDelete?.let { file ->
+            AlertDialog(
+                onDismissRequest = { selectedFileForDelete = null },
+                title = { Text("Delete '${file.name}'?") },
+                text = { Text("This will permanently delete the item from Google Drive.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            viewModel.deleteFile(file)
+                            selectedFileForDelete = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { selectedFileForDelete = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Share Link Dialog
+        sharedLinkToDisplay?.let { link ->
+            AlertDialog(
+                onDismissRequest = { sharedLinkToDisplay = null },
+                title = { Text("Share Link") },
+                text = {
+                    Column {
+                        Text("Link generated for Google Drive file:")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        SelectableText(
+                            text = link,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("Google Drive Link", link))
+                            sharedLinkToDisplay = null
+                        }
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Copy Link")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { sharedLinkToDisplay = null }) {
+                        Text("Close")
                     }
                 }
             )

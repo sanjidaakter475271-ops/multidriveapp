@@ -5,7 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -507,11 +507,13 @@ fun HomeScreen(
                     Column {
                         Text("Link generated for Google Drive file:")
                         Spacer(modifier = Modifier.height(8.dp))
-                        SelectableText(
-                            text = link,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        SelectionContainer {
+                            Text(
+                                text = link,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 confirmButton = {

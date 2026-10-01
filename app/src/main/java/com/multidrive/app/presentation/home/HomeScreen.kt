@@ -1,16 +1,27 @@
 package com.multidrive.app.presentation.home
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.multidrive.app.domain.model.DriveFile
+import com.multidrive.app.presentation.components.FileGridCard
 import com.multidrive.app.presentation.components.FileRow
 import com.multidrive.app.presentation.viewmodel.HomeUiState
 import com.multidrive.app.presentation.viewmodel.HomeViewModel
@@ -19,15 +30,176 @@ import com.multidrive.app.presentation.viewmodel.HomeViewModel
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onFileClick: (DriveFile) -> Unit
+    onFileClick: (DriveFile) -> Unit,
+    onOpenDrawer: () -> Unit = {},
+    onNavigateToAccounts: () -> Unit = {},
+    onNavigateToUpload: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: My Drive, 1: Computers
+    var isGridView by remember { mutableStateOf(true) } // Toggle Grid vs List
+    var sortAscending by remember { mutableStateOf(true) }
+    var showFabMenu by remember { mutableStateOf(false) }
+    var showCreateFolderDialog by remember { mutableStateOf(false) }
+    var folderNameInput by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("MultiDrive - Unified Files") }
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                // Google Drive-style Top Floating Search Bar (Screenshot 1)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    tonalElevation = 6.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = onOpenDrawer) {
+                            Icon(Icons.Default.Menu, contentDescription = "Open Sidebar")
+                        }
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Search in Drive", style = MaterialTheme.typography.bodyLarge) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent
+                            )
+                        )
+                        IconButton(onClick = { /* AI Assistant feature */ }) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "AI Assistant",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = onNavigateToAccounts) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = "Accounts",
+                                    tint = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Sub-header Tabs: My Drive | Computers (Screenshot 1)
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    divider = {}
+                ) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = { Text("My Drive", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) }
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        text = { Text("Computers", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) }
+                    )
+                }
+
+                // Control Bar: Name ↑ Sort & View Toggle Buttons (Screenshot 1)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Sort order button
+                    FilterChip(
+                        selected = false,
+                        onClick = { sortAscending = !sortAscending },
+                        label = { Text("Name") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = if (sortAscending) Icons.Default.ArrowUpward else Icons.Default.ArrowDownward,
+                                contentDescription = "Sort",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
+
+                    // View toggle buttons (List vs Grid)
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .padding(4.dp)
+                    ) {
+                        IconButton(
+                            onClick = { isGridView = false },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.FormatListBulleted,
+                                contentDescription = "List View",
+                                tint = if (!isGridView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(
+                            onClick = { isGridView = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.GridView,
+                                contentDescription = "Grid View",
+                                tint = if (isGridView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        floatingActionButton = {
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Secondary FAB (Scan/Camera)
+                SmallFloatingActionButton(
+                    onClick = onNavigateToUpload,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(Icons.Default.PhotoCamera, contentDescription = "Scan")
+                }
+
+                // Primary FAB (+)
+                FloatingActionButton(
+                    onClick = { showFabMenu = true },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Item")
+                }
+            }
         }
     ) { padding ->
         Box(
@@ -40,36 +212,179 @@ fun HomeScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
                 is HomeUiState.Error -> {
-                    Text(
-                        text = state.message,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = state.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = { viewModel.loadFiles() }) {
+                            Text("Retry")
+                        }
+                    }
                 }
                 is HomeUiState.Success -> {
-                    if (state.files.isEmpty()) {
-                        Text(
-                            text = "No files found. Add Google accounts to get started.",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                    val filteredFiles = remember(state.files, searchQuery, sortAscending) {
+                        var list = if (searchQuery.isBlank()) state.files
+                        else state.files.filter { it.name.contains(searchQuery, ignoreCase = true) }
+                        list = if (sortAscending) list.sortedBy { it.name } else list.sortedByDescending { it.name }
+                        list
+                    }
+
+                    if (filteredFiles.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudQueue,
+                                contentDescription = null,
+                                modifier = Modifier.size(72.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = if (searchQuery.isNotBlank()) "No matching files" else "No files found",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (searchQuery.isNotBlank()) "Try a different search query." else "Add a Google Drive account to sync and manage your files.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (searchQuery.isBlank()) {
+                                Spacer(modifier = Modifier.height(20.dp))
+                                Button(onClick = onNavigateToAccounts) {
+                                    Icon(Icons.Default.PersonAdd, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Add Google Account")
+                                }
+                            }
+                        }
                     } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(state.files) { file ->
-                                FileRow(
-                                    file = file,
-                                    accountEmail = file.accountEmail,
-                                    onFileClick = onFileClick,
-                                    onRename = { /* Rename Dialog */ },
-                                    onDelete = { viewModel.trashFile(file.id) },
-                                    onShare = { /* Share Link */ },
-                                    onDownload = { /* Trigger Download */ }
-                                )
-                                HorizontalDivider()
+                        if (isGridView) {
+                            // 2-column Grid View matching Screenshot 1
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(filteredFiles) { file ->
+                                    FileGridCard(
+                                        file = file,
+                                        accountEmail = file.accountEmail,
+                                        onFileClick = onFileClick,
+                                        onRename = { /* Rename Dialog */ },
+                                        onDelete = { viewModel.trashFile(file.id) },
+                                        onShare = { /* Share Link */ },
+                                        onDownload = { /* Trigger Download */ }
+                                    )
+                                }
+                            }
+                        } else {
+                            // 1-column List View
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                items(filteredFiles) { file ->
+                                    FileRow(
+                                        file = file,
+                                        accountEmail = file.accountEmail,
+                                        onFileClick = onFileClick,
+                                        onRename = { /* Rename Dialog */ },
+                                        onDelete = { viewModel.trashFile(file.id) },
+                                        onShare = { /* Share Link */ },
+                                        onDownload = { /* Trigger Download */ }
+                                    )
+                                    HorizontalDivider()
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+
+        // FAB Speed Dial Options Dialog
+        if (showFabMenu) {
+            AlertDialog(
+                onDismissRequest = { showFabMenu = false },
+                title = { Text("Create / Add") },
+                text = {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text("Upload File") },
+                            leadingContent = { Icon(Icons.Default.UploadFile, contentDescription = null) },
+                            modifier = Modifier.clickable {
+                                showFabMenu = false
+                                onNavigateToUpload()
+                            }
+                        )
+                        ListItem(
+                            headlineContent = { Text("Create Folder") },
+                            leadingContent = { Icon(Icons.Default.CreateNewFolder, contentDescription = null) },
+                            modifier = Modifier.clickable {
+                                showFabMenu = false
+                                showCreateFolderDialog = true
+                            }
+                        )
+                        ListItem(
+                            headlineContent = { Text("Add Google Account") },
+                            leadingContent = { Icon(Icons.Default.PersonAdd, contentDescription = null) },
+                            modifier = Modifier.clickable {
+                                showFabMenu = false
+                                onNavigateToAccounts()
+                            }
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showFabMenu = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Create Folder Dialog
+        if (showCreateFolderDialog) {
+            AlertDialog(
+                onDismissRequest = { showCreateFolderDialog = false },
+                title = { Text("New Folder") },
+                text = {
+                    OutlinedTextField(
+                        value = folderNameInput,
+                        onValueChange = { folderNameInput = it },
+                        label = { Text("Folder Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showCreateFolderDialog = false
+                            folderNameInput = ""
+                        },
+                        enabled = folderNameInput.isNotBlank()
+                    ) {
+                        Text("Create")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCreateFolderDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

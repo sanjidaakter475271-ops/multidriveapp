@@ -9,7 +9,7 @@ interface FolderDao {
     @Query("SELECT * FROM folders ORDER BY modifiedAt DESC")
     fun getAllFolders(): Flow<List<FolderEntity>>
 
-    @Query("SELECT * FROM folders WHERE parentFolderId = :parentId")
+    @Query("SELECT * FROM folders WHERE (:parentId IS NULL AND parentFolderId IS NULL) OR parentFolderId = :parentId")
     fun getFoldersByParent(parentId: String?): Flow<List<FolderEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

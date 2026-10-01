@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.multidrive.app.presentation.components.SkeletonStorageCard
 import com.multidrive.app.presentation.components.StorageCard
 import com.multidrive.app.presentation.viewmodel.DashboardUiState
 import com.multidrive.app.presentation.viewmodel.DashboardViewModel
@@ -39,7 +40,15 @@ fun DashboardScreen(
         ) {
             when (val state = uiState) {
                 is DashboardUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(3) {
+                            SkeletonStorageCard()
+                        }
+                    }
                 }
                 is DashboardUiState.Error -> {
                     Text(

@@ -5,8 +5,9 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import com.multidrive.app.domain.model.DriveFile
 import com.multidrive.app.presentation.components.FileGridCard
 import com.multidrive.app.presentation.components.FileRow
+import com.multidrive.app.presentation.components.SkeletonFileGridCard
+import com.multidrive.app.presentation.components.SkeletonFileRow
 import com.multidrive.app.presentation.viewmodel.ActionState
 import com.multidrive.app.presentation.viewmodel.HomeUiState
 import com.multidrive.app.presentation.viewmodel.HomeViewModel
@@ -249,7 +252,27 @@ fun HomeScreen(
         ) {
             when (val state = uiState) {
                 is HomeUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    if (isGridView) {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(6) {
+                                SkeletonFileGridCard()
+                            }
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(6) {
+                                SkeletonFileRow()
+                                HorizontalDivider()
+                            }
+                        }
+                    }
                 }
                 is HomeUiState.Error -> {
                     Column(

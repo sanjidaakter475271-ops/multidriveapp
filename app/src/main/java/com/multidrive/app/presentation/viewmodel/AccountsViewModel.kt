@@ -40,6 +40,54 @@ class AccountsViewModel @Inject constructor(
     private val _testConnectionState = MutableStateFlow<String?>(null)
     val testConnectionState: StateFlow<String?> = _testConnectionState.asStateFlow()
 
+    /**
+     * Called from MainActivity when the deep link multidrive://auth-done?account=email arrives.
+     * The backend has already exchanged the code and stored tokens server-side.
+     * The app uses the email to fetch the account from the backend /api/account/{email} endpoint,
+     * OR reads the token that the backend saved to the app's secure store via a shared session.
+     *
+     * For now: triggers AddAccountUseCase which calls getAbout with whatever token the
+     * backend saved for this email (backend should POST the token to the app's local API or
+     * store it via a pre-shared mechanism). Falls back to prompting user to enter token if needed.
+     */
+    fun syncNewAccountFromBackend(email: String) {
+        viewModelScope.launch {
+            _addAccountState.value = AddAccountState.Loading
+            val token = authManager.getAccessToken(email)
+            if (token.isNullOrBlank()) {
+                // Token not yet available locally — user may need to manually enter it
+                // or the backend must push it. Show informational success for now.
+                _addAccountState.value = AddAccountState.Error(
+                    "Account '$email' authorized! Enter the access token below to complete setup."
+                )
+                return@launch
+            }
+            val result = addAccountUseCase(
+                googleAccountId = email,
+                email = email,
+                displayName = "",
+                photoUrl = null
+            )
+            result.fold(
+                onSuccess = { account ->
+                    syncAccountUseCase(account.id)
+                    _addAccountState.value = AddAccountState.Success(account)
+                },
+                onFailure = { error ->
+                    _addAccountState.value = AddAccountState.Error(error.message ?: "Failed to sync account from backend")
+                }
+            )
+        }
+    }
+
+    fun notifyOAuthError(message: String) {
+        _addAccountState.value = AddAccountState.Error(message)
+    }
+
+    /**
+     * Manual access token entry — user provides email + access token directly.
+     * Optional refresh token for automatic renewal.
+     */
     fun addAccount(
         email: String,
         displayName: String,
@@ -50,7 +98,6 @@ class AccountsViewModel @Inject constructor(
             _addAccountState.value = AddAccountState.Loading
             try {
                 authManager.saveToken(email, accessToken, refreshToken)
-
                 val result = addAccountUseCase(
                     googleAccountId = email,
                     email = email,
@@ -58,7 +105,6 @@ class AccountsViewModel @Inject constructor(
                     photoUrl = null,
                     refreshToken = refreshToken
                 )
-
                 result.fold(
                     onSuccess = { account ->
                         syncAccountUseCase(account.id)
@@ -74,27 +120,18 @@ class AccountsViewModel @Inject constructor(
         }
     }
 
-    fun addAccountFromAuthCode(
-        authCode: String,
-        displayName: String = "",
-        clientId: String = "",
-        clientSecret: String = ""
-    ) {
+    /**
+     * Auth Code exchange flow — user pastes the authorization code from the browser callback.
+     */
+    fun addAccountFromAuthCode(authCode: String, displayName: String = "") {
         viewModelScope.launch {
             _addAccountState.value = AddAccountState.Loading
             try {
-                val exchangeResult = authManager.exchangeAuthorizationCode(
-                    authCode = authCode.trim(),
-                    clientId = clientId.trim(),
-                    clientSecret = clientSecret.trim()
-                )
-
+                val exchangeResult = authManager.exchangeAuthorizationCode(authCode = authCode.trim())
                 exchangeResult.fold(
                     onSuccess = { tokenResp ->
-                        // Token exchanged successfully! Temporary dummy email until getAbout retrieves real email
                         val tempEmail = "pending_${System.currentTimeMillis()}@gmail.com"
                         authManager.saveToken(tempEmail, tokenResp.accessToken, tokenResp.refreshToken)
-
                         val addResult = addAccountUseCase(
                             googleAccountId = tempEmail,
                             email = tempEmail,
@@ -103,7 +140,6 @@ class AccountsViewModel @Inject constructor(
                             refreshToken = tokenResp.refreshToken,
                             expiresInSeconds = tokenResp.expiresInSeconds
                         )
-
                         addResult.fold(
                             onSuccess = { account ->
                                 syncAccountUseCase(account.id)

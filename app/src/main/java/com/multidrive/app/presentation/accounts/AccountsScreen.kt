@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.multidrive.app.data.auth.GoogleOAuthHelper
+import com.multidrive.app.data.auth.OAuthConfig
 import com.multidrive.app.domain.model.Account
 import com.multidrive.app.presentation.viewmodel.AddAccountState
 import com.multidrive.app.presentation.viewmodel.AccountsViewModel
@@ -179,22 +180,22 @@ fun AccountsScreen(
 
                         if (selectedTab == 0) {
                             // Tab 0: OAuth Code Flow (response_type=code + access_type=offline)
-                            OutlinedButton(
-                                onClick = {
-                                    GoogleOAuthHelper.launchGoogleOAuthBrowser(context)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Icon(Icons.Default.OpenInBrowser, contentDescription = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Open Google Sign-In (Browser)")
-                            }
+                        OutlinedButton(
+                            onClick = {
+                                GoogleOAuthHelper.launchOAuthViaBrowser(context)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.OpenInBrowser, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Sign in with Google (Secure Browser)")
+                        }
 
-                            Text(
-                                text = "Click above to sign in with Google in your browser, grant Drive permissions, and paste the resulting authorization code below:",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Text(
+                            text = "Opens Google sign-in via your browser. After approving, you'll be returned automatically. Backend URL: ${OAuthConfig.AUTH_START_URL}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
                             OutlinedTextField(
                                 value = authCodeInput,

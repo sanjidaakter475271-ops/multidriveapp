@@ -22,7 +22,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.multidrive.app.domain.model.Account
 import com.multidrive.app.presentation.accounts.AccountsScreen
 import com.multidrive.app.presentation.dashboard.DashboardScreen
 import com.multidrive.app.presentation.home.HomeScreen

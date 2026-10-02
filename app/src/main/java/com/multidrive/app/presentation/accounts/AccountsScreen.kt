@@ -19,7 +19,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.multidrive.app.data.auth.GoogleOAuthHelper
-import com.multidrive.app.data.auth.OAuthConfig
 import com.multidrive.app.domain.model.Account
 import com.multidrive.app.presentation.viewmodel.AddAccountState
 import com.multidrive.app.presentation.viewmodel.AccountsViewModel
@@ -37,7 +36,7 @@ fun AccountsScreen(
     val testMessage by viewModel.testConnectionState.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Auth Code (Recommended), 1: Manual Access Token
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Auth Code (Google Sign-In), 1: Direct Access Token
 
     // Form inputs
     var authCodeInput by remember { mutableStateOf("") }
@@ -167,35 +166,35 @@ fun AccountsScreen(
                             Tab(
                                 selected = selectedTab == 0,
                                 onClick = { selectedTab = 0 },
-                                text = { Text("Auth Code") }
+                                text = { Text("Google Sign-In") }
                             )
                             Tab(
                                 selected = selectedTab == 1,
                                 onClick = { selectedTab = 1 },
-                                text = { Text("Access Token") }
+                                text = { Text("Direct Token") }
                             )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         if (selectedTab == 0) {
-                            // Tab 0: OAuth Code Flow (response_type=code + access_type=offline)
-                        OutlinedButton(
-                            onClick = {
-                                GoogleOAuthHelper.launchOAuthViaBrowser(context)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.OpenInBrowser, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Sign in with Google (Secure Browser)")
-                        }
+                            // Tab 0: Direct Real Google OAuth Consent Page (response_type=code)
+                            Button(
+                                onClick = {
+                                    GoogleOAuthHelper.launchGoogleOAuthBrowser(context)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.OpenInBrowser, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Sign in with Google (Browser)")
+                            }
 
-                        Text(
-                            text = "Opens Google sign-in via your browser. After approving, you'll be returned automatically. Backend URL: ${OAuthConfig.AUTH_START_URL}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            Text(
+                                text = "1. Tap above to open Google's sign-in page.\n2. Sign in & grant Drive permission.\n3. Copy the code shown and paste it below:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
                             OutlinedTextField(
                                 value = authCodeInput,
@@ -207,7 +206,7 @@ fun AccountsScreen(
                         } else {
                             // Tab 1: Direct Access Token Entry
                             Text(
-                                text = "Enter account details & OAuth Access Token directly:",
+                                text = "Enter account email & Google OAuth Access Token directly:",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -255,7 +254,7 @@ fun AccountsScreen(
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Text("Exchanging token & verifying with Google Drive API...")
+                                Text("Exchanging code & fetching Drive info...")
                             }
                         }
                     }
@@ -342,7 +341,6 @@ fun AccountItemRow(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Status Indicator (● Connected vs ● Reauth Required)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,

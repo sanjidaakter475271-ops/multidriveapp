@@ -11,7 +11,7 @@ import com.multidrive.app.data.local.entity.UploadTaskEntity
 @Composable
 fun UploadProgressCard(
     task: UploadTaskEntity,
-    onCancel: (UploadTaskEntity) -> Unit
+    onCancel: () -> Unit
 ) {
     Card(
         modifier = Modifier

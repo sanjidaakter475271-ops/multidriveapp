@@ -36,6 +36,10 @@ fun AccountsScreen(
     val testMessage by viewModel.testConnectionState.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Auth Code (Recommended), 1: Manual Access Token
+
+    // Form inputs
+    var authCodeInput by remember { mutableStateOf("") }
     var emailInput by remember { mutableStateOf("") }
     var nameInput by remember { mutableStateOf("") }
     var tokenInput by remember { mutableStateOf("") }
@@ -47,6 +51,7 @@ fun AccountsScreen(
         when (val state = addState) {
             is AddAccountState.Success -> {
                 showAddDialog = false
+                authCodeInput = ""
                 emailInput = ""
                 nameInput = ""
                 tokenInput = ""
@@ -157,58 +162,89 @@ fun AccountsScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedButton(
-                            onClick = {
-                                GoogleOAuthHelper.launchGoogleOAuthBrowser(context)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.OpenInBrowser, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Open Google Sign-In (Browser)")
+                        TabRow(selectedTabIndex = selectedTab) {
+                            Tab(
+                                selected = selectedTab == 0,
+                                onClick = { selectedTab = 0 },
+                                text = { Text("Auth Code") }
+                            )
+                            Tab(
+                                selected = selectedTab == 1,
+                                onClick = { selectedTab = 1 },
+                                text = { Text("Access Token") }
+                            )
                         }
 
-                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            text = "Enter account details & OAuth credentials:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        if (selectedTab == 0) {
+                            // Tab 0: OAuth Code Flow (response_type=code + access_type=offline)
+                            OutlinedButton(
+                                onClick = {
+                                    GoogleOAuthHelper.launchGoogleOAuthBrowser(context)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.OpenInBrowser, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Open Google Sign-In (Browser)")
+                            }
 
-                        OutlinedTextField(
-                            value = emailInput,
-                            onValueChange = { emailInput = it },
-                            label = { Text("Google Account Email") },
-                            placeholder = { Text("user@gmail.com") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            Text(
+                                text = "Click above to sign in with Google in your browser, grant Drive permissions, and paste the resulting authorization code below:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
-                        OutlinedTextField(
-                            value = nameInput,
-                            onValueChange = { nameInput = it },
-                            label = { Text("Display Label (Optional)") },
-                            placeholder = { Text("Work Drive / Personal Drive") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            OutlinedTextField(
+                                value = authCodeInput,
+                                onValueChange = { authCodeInput = it },
+                                label = { Text("Google Authorization Code") },
+                                placeholder = { Text("4/0A...") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            // Tab 1: Direct Access Token Entry
+                            Text(
+                                text = "Enter account details & OAuth Access Token directly:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
-                        OutlinedTextField(
-                            value = tokenInput,
-                            onValueChange = { tokenInput = it },
-                            label = { Text("Google Drive OAuth Access Token") },
-                            placeholder = { Text("ya29.a0...") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            OutlinedTextField(
+                                value = emailInput,
+                                onValueChange = { emailInput = it },
+                                label = { Text("Google Account Email") },
+                                placeholder = { Text("user@gmail.com") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                        OutlinedTextField(
-                            value = refreshTokenInput,
-                            onValueChange = { refreshTokenInput = it },
-                            label = { Text("OAuth Refresh Token (Optional for auto-renewal)") },
-                            placeholder = { Text("1//04...") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            OutlinedTextField(
+                                value = nameInput,
+                                onValueChange = { nameInput = it },
+                                label = { Text("Display Label (Optional)") },
+                                placeholder = { Text("Work Drive / Personal Drive") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            OutlinedTextField(
+                                value = tokenInput,
+                                onValueChange = { tokenInput = it },
+                                label = { Text("Google Drive OAuth Access Token") },
+                                placeholder = { Text("ya29.a0...") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            OutlinedTextField(
+                                value = refreshTokenInput,
+                                onValueChange = { refreshTokenInput = it },
+                                label = { Text("OAuth Refresh Token (Optional)") },
+                                placeholder = { Text("1//04...") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
                         if (addState is AddAccountState.Loading) {
                             Row(
@@ -218,7 +254,7 @@ fun AccountsScreen(
                             ) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Text("Verifying with Google Drive API...")
+                                Text("Exchanging token & verifying with Google Drive API...")
                             }
                         }
                     }
@@ -226,14 +262,20 @@ fun AccountsScreen(
                 confirmButton = {
                     Button(
                         onClick = {
-                            viewModel.addAccount(
-                                email = emailInput.trim(),
-                                displayName = nameInput.trim(),
-                                accessToken = tokenInput.trim(),
-                                refreshToken = refreshTokenInput.trim().ifBlank { null }
-                            )
+                            if (selectedTab == 0) {
+                                viewModel.addAccountFromAuthCode(
+                                    authCode = authCodeInput.trim()
+                                )
+                            } else {
+                                viewModel.addAccount(
+                                    email = emailInput.trim(),
+                                    displayName = nameInput.trim(),
+                                    accessToken = tokenInput.trim(),
+                                    refreshToken = refreshTokenInput.trim().ifBlank { null }
+                                )
+                            }
                         },
-                        enabled = emailInput.isNotBlank() && tokenInput.isNotBlank() && addState !is AddAccountState.Loading
+                        enabled = (if (selectedTab == 0) authCodeInput.isNotBlank() else (emailInput.isNotBlank() && tokenInput.isNotBlank())) && addState !is AddAccountState.Loading
                     ) {
                         Text("Connect Account")
                     }

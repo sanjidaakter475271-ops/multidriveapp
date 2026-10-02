@@ -74,6 +74,56 @@ class AccountsViewModel @Inject constructor(
         }
     }
 
+    fun addAccountFromAuthCode(
+        authCode: String,
+        displayName: String = "",
+        clientId: String = "",
+        clientSecret: String = ""
+    ) {
+        viewModelScope.launch {
+            _addAccountState.value = AddAccountState.Loading
+            try {
+                val exchangeResult = authManager.exchangeAuthorizationCode(
+                    authCode = authCode.trim(),
+                    clientId = clientId.trim(),
+                    clientSecret = clientSecret.trim()
+                )
+
+                exchangeResult.fold(
+                    onSuccess = { tokenResp ->
+                        // Token exchanged successfully! Temporary dummy email until getAbout retrieves real email
+                        val tempEmail = "pending_${System.currentTimeMillis()}@gmail.com"
+                        authManager.saveToken(tempEmail, tokenResp.accessToken, tokenResp.refreshToken)
+
+                        val addResult = addAccountUseCase(
+                            googleAccountId = tempEmail,
+                            email = tempEmail,
+                            displayName = displayName,
+                            photoUrl = null,
+                            refreshToken = tokenResp.refreshToken,
+                            expiresInSeconds = tokenResp.expiresInSeconds
+                        )
+
+                        addResult.fold(
+                            onSuccess = { account ->
+                                syncAccountUseCase(account.id)
+                                _addAccountState.value = AddAccountState.Success(account)
+                            },
+                            onFailure = { error ->
+                                _addAccountState.value = AddAccountState.Error("Failed to fetch Google Account info: ${error.message}")
+                            }
+                        )
+                    },
+                    onFailure = { error ->
+                        _addAccountState.value = AddAccountState.Error(error.message ?: "OAuth Code Exchange failed")
+                    }
+                )
+            } catch (e: Exception) {
+                _addAccountState.value = AddAccountState.Error(e.message ?: "Unexpected error during OAuth exchange")
+            }
+        }
+    }
+
     fun testAccountConnection(account: Account) {
         viewModelScope.launch {
             _testConnectionState.value = "Testing connection for ${account.email}..."

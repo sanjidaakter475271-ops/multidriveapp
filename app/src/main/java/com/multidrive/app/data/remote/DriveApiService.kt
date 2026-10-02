@@ -37,7 +37,8 @@ data class DriveStorageQuota(
 data class DriveUserDto(
     val displayName: String? = null,
     val emailAddress: String? = null,
-    val photoLink: String? = null
+    val photoLink: String? = null,
+    val permissionId: String? = null
 )
 
 interface DriveApiService {

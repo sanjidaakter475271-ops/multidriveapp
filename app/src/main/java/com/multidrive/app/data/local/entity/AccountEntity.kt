@@ -21,4 +21,7 @@ data class AccountEntity(
     val googleSubjectId: String? = null,
     val status: String = "CONNECTED",
     val lastError: String? = null
-)
+) {
+    val isTokenExpired: Boolean
+        get() = tokenExpiresAt > 0 && System.currentTimeMillis() >= tokenExpiresAt
+}

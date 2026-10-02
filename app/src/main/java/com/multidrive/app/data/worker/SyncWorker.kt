@@ -21,15 +21,37 @@ class SyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        return try {
-            val accounts = accountRepository.getAllAccounts().first()
-            for (account in accounts) {
-                syncAccountUseCase(account.id)
-                refreshQuotaUseCase(account.id)
+        val accounts = accountRepository.getAllAccounts().first()
+        var hasErrors = false
+
+        for (account in accounts) {
+            if (!account.isActive) continue
+            try {
+                val syncResult = syncAccountUseCase(account.id)
+                val quotaResult = refreshQuotaUseCase(account.id)
+
+                if (syncResult.isFailure || quotaResult.isFailure) {
+                    val err = syncResult.exceptionOrNull()?.message ?: quotaResult.exceptionOrNull()?.message
+                    accountRepository.updateAccount(account.copy(
+                        status = "REAUTH_REQUIRED",
+                        lastError = err
+                    ))
+                    hasErrors = true
+                } else {
+                    accountRepository.updateAccount(account.copy(
+                        status = "CONNECTED",
+                        lastError = null,
+                        lastSynced = System.currentTimeMillis()
+                    ))
+                }
+            } catch (e: Exception) {
+                hasErrors = true
+                accountRepository.updateAccount(account.copy(
+                    status = "ERROR",
+                    lastError = e.localizedMessage
+                ))
             }
-            Result.success()
-        } catch (e: Exception) {
-            Result.retry()
         }
+        return if (hasErrors) Result.retry() else Result.success()
     }
 }

@@ -3,7 +3,7 @@ package com.multidrive.app.di
 import android.content.Context
 import androidx.room.Room
 import com.multidrive.app.data.local.MultiDriveDatabase
-import com.multidrive.app.data.local.MultiDriveDatabase.Companion.MIGRATION_1_2
+import com.multidrive.app.data.local.MultiDriveDatabase.Companion.MIGRATION_2_3
 import com.multidrive.app.data.local.dao.*
 import dagger.Module
 import dagger.Provides
@@ -24,7 +24,8 @@ object DatabaseModule {
             MultiDriveDatabase::class.java,
             MultiDriveDatabase.DATABASE_NAME
         )
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_2_3)
+            .fallbackToDestructiveMigration()
             .build()
     }
 

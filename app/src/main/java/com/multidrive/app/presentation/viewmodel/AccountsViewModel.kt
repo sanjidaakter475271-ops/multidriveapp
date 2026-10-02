@@ -6,6 +6,7 @@ import com.multidrive.app.data.auth.DriveAuthorizationManager
 import com.multidrive.app.domain.model.Account
 import com.multidrive.app.domain.repository.AccountRepository
 import com.multidrive.app.domain.usecase.AddAccountUseCase
+import com.multidrive.app.domain.usecase.RefreshQuotaUseCase
 import com.multidrive.app.domain.usecase.RemoveAccountUseCase
 import com.multidrive.app.domain.usecase.SyncAccountUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ class AccountsViewModel @Inject constructor(
     private val addAccountUseCase: AddAccountUseCase,
     private val removeAccountUseCase: RemoveAccountUseCase,
     private val syncAccountUseCase: SyncAccountUseCase,
+    private val refreshQuotaUseCase: RefreshQuotaUseCase,
     private val authManager: DriveAuthorizationManager
 ) : ViewModel() {
 
@@ -35,28 +37,30 @@ class AccountsViewModel @Inject constructor(
     private val _addAccountState = MutableStateFlow<AddAccountState>(AddAccountState.Idle)
     val addAccountState: StateFlow<AddAccountState> = _addAccountState.asStateFlow()
 
+    private val _testConnectionState = MutableStateFlow<String?>(null)
+    val testConnectionState: StateFlow<String?> = _testConnectionState.asStateFlow()
+
     fun addAccount(
         email: String,
         displayName: String,
-        accessToken: String
+        accessToken: String,
+        refreshToken: String? = null
     ) {
         viewModelScope.launch {
             _addAccountState.value = AddAccountState.Loading
             try {
-                // Save access token for this account email
-                authManager.saveToken(email, accessToken)
+                authManager.saveToken(email, accessToken, refreshToken)
 
-                // Call AddAccountUseCase to fetch about info from Google Drive API
                 val result = addAccountUseCase(
                     googleAccountId = email,
                     email = email,
                     displayName = displayName.ifBlank { email },
-                    photoUrl = null
+                    photoUrl = null,
+                    refreshToken = refreshToken
                 )
 
                 result.fold(
                     onSuccess = { account ->
-                        // Sync remote files immediately
                         syncAccountUseCase(account.id)
                         _addAccountState.value = AddAccountState.Success(account)
                     },
@@ -68,6 +72,27 @@ class AccountsViewModel @Inject constructor(
                 _addAccountState.value = AddAccountState.Error(e.message ?: "An unexpected error occurred")
             }
         }
+    }
+
+    fun testAccountConnection(account: Account) {
+        viewModelScope.launch {
+            _testConnectionState.value = "Testing connection for ${account.email}..."
+            val result = refreshQuotaUseCase(account.id)
+            result.fold(
+                onSuccess = {
+                    accountRepository.updateAccount(account.copy(status = "CONNECTED", lastError = null))
+                    _testConnectionState.value = "Connection OK for ${account.email}! Quota & Drive API verified."
+                },
+                onFailure = { error ->
+                    accountRepository.updateAccount(account.copy(status = "REAUTH_REQUIRED", lastError = error.message))
+                    _testConnectionState.value = "Connection failed for ${account.email}: ${error.message}"
+                }
+            )
+        }
+    }
+
+    fun clearTestMessage() {
+        _testConnectionState.value = null
     }
 
     fun resetAddAccountState() {

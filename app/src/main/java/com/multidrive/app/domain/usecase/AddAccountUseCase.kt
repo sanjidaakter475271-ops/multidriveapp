@@ -15,36 +15,46 @@ class AddAccountUseCase @Inject constructor(
         googleAccountId: String,
         email: String,
         displayName: String,
-        photoUrl: String?
+        photoUrl: String?,
+        refreshToken: String? = null,
+        expiresInSeconds: Long = 3600L
     ): Result<Account> {
         return try {
-            val existing = accountRepository.getAccountByEmail(email)
-            if (existing != null) {
-                return Result.failure(Exception("Account already added"))
-            }
-
             val token = authManager.getAccessToken(email)
                 ?: return Result.failure(Exception("Failed to obtain OAuth access token"))
 
             val aboutResponse = driveApiService.getAbout("Bearer $token")
             val quota = aboutResponse.storageQuota?.limit ?: 15_000_000_000L
             val used = aboutResponse.storageQuota?.usage ?: 0L
+            val userEmail = aboutResponse.user?.emailAddress ?: email
+            val userDisplayName = aboutResponse.user?.displayName ?: displayName
+            val photo = aboutResponse.user?.photoLink ?: photoUrl
+            val subjectId = aboutResponse.user?.permissionId ?: googleAccountId
 
-            val account = Account(
-                id = 0,
-                googleAccountId = googleAccountId,
-                email = email,
-                displayName = displayName,
-                photoUrl = photoUrl,
+            val expiresAt = System.currentTimeMillis() + (expiresInSeconds * 1000L)
+
+            val existing = accountRepository.getAccountByEmail(userEmail)
+            val accountToSave = Account(
+                id = existing?.id ?: 0,
+                googleAccountId = subjectId,
+                email = userEmail,
+                displayName = userDisplayName.ifBlank { userEmail },
+                photoUrl = photo,
                 storageQuota = quota,
                 storageUsed = used,
                 lastSynced = System.currentTimeMillis(),
                 isActive = true,
-                sortOrder = 0
+                sortOrder = existing?.sortOrder ?: 0,
+                refreshToken = refreshToken ?: existing?.refreshToken,
+                accessToken = token,
+                tokenExpiresAt = expiresAt,
+                googleSubjectId = subjectId,
+                status = "CONNECTED",
+                lastError = null
             )
 
-            val id = accountRepository.insertAccount(account)
-            Result.success(account.copy(id = id.toInt()))
+            val id = accountRepository.insertAccount(accountToSave)
+            Result.success(accountToSave.copy(id = id.toInt()))
         } catch (e: Exception) {
             Result.failure(e)
         }

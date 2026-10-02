@@ -54,7 +54,13 @@ class AccountRepositoryImpl @Inject constructor(
         storageUsed = storageUsed,
         lastSynced = lastSynced,
         isActive = isActive,
-        sortOrder = sortOrder
+        sortOrder = sortOrder,
+        refreshToken = refreshToken,
+        accessToken = accessToken,
+        tokenExpiresAt = tokenExpiresAt,
+        googleSubjectId = googleSubjectId,
+        status = status,
+        lastError = lastError
     )
 
     private fun Account.toEntity() = AccountEntity(
@@ -67,6 +73,12 @@ class AccountRepositoryImpl @Inject constructor(
         storageUsed = storageUsed,
         lastSynced = lastSynced,
         isActive = isActive,
-        sortOrder = sortOrder
+        sortOrder = sortOrder,
+        refreshToken = refreshToken,
+        accessToken = accessToken,
+        tokenExpiresAt = tokenExpiresAt,
+        googleSubjectId = googleSubjectId,
+        status = status,
+        lastError = lastError
     )
 }

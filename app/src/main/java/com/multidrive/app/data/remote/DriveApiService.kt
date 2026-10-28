@@ -91,9 +91,10 @@ interface DriveApiService {
         @Body body: RequestMap
     ): DriveFileDto
 
+    // BUG-021 FIX: Renamed from downloadFile to downloadFileStream to avoid duplicate @GET annotation
     @GET("files/{fileId}")
     @Streaming
-    suspend fun downloadFile(
+    suspend fun downloadFileStream(
         @Header("Authorization") authorization: String,
         @Path("fileId") fileId: String,
         @Query("alt") alt: String = "media"

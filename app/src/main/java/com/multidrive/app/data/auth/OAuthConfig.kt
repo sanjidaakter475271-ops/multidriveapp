@@ -16,9 +16,10 @@ package com.multidrive.app.data.auth
 object OAuthConfig {
     /**
      * Base URL of your backend server.
-     * Replace with your real domain (Cloudflare Tunnel, DuckDNS, etc.)
+     * BUG-006 FIX: Read from BuildConfig for easy configuration per environment.
+     * Set in local.properties: BACKEND_BASE_URL=https://multidrive-auth.yourdomain.com
      */
-    const val BACKEND_BASE_URL = "https://multidrive-auth.example.com"
+    const val BACKEND_BASE_URL = BuildConfig.BACKEND_BASE_URL
 
     /** Backend endpoint that starts the Google OAuth flow */
     const val AUTH_START_URL = "$BACKEND_BASE_URL/auth/start"

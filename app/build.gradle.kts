@@ -21,6 +21,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // BUG-006 & BUG-023 FIX: Provide build config fields from properties or defaults
+        val clientId = project.findProperty("GOOGLE_CLIENT_ID") as? String
+            ?: "1053073934306-multidrive.apps.googleusercontent.com"
+        val backendUrl = project.findProperty("BACKEND_BASE_URL") as? String
+            ?: "https://multidrive-auth.example.com"
+
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$clientId\"")
+        buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")
     }
 
     buildTypes {
@@ -43,6 +52,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {

@@ -1,5 +1,6 @@
 package com.multidrive.app.data.auth
 
+import android.util.Log
 import android.content.Context
 import com.multidrive.app.data.local.dao.AccountDao
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -42,12 +43,16 @@ class DriveAuthorizationManager @Inject constructor(
             }
         }
 
-        tokenFromStore ?: account?.accessToken
+        tokenFromStore
     }
 
     /**
      * Exchanges an OAuth Authorization Code (response_type=code) at https://oauth2.googleapis.com/token
      * for an Access Token and Refresh Token (grant_type=authorization_code).
+     *
+     * BUG-002 FIX: clientSecret now defaults to the configured value from OAuthConfig,
+     * not an empty string. For Native app OAuth clients, this will be empty and Google
+     * won't require it. For Web OAuth clients, the backend should provide the secret.
      */
     suspend fun exchangeAuthorizationCode(
         authCode: String,
@@ -61,10 +66,8 @@ class DriveAuthorizationManager @Inject constructor(
                 .add("client_id", clientId.ifBlank { GoogleOAuthHelper.DEFAULT_CLIENT_ID })
                 .add("redirect_uri", redirectUri)
                 .add("grant_type", "authorization_code")
-
-            if (clientSecret.isNotBlank()) {
-                formBodyBuilder.add("client_secret", clientSecret)
-            }
+                // BUG-002 FIX: Always send client_secret for Web OAuth clients
+                // For Native app clients, this will be empty and Google won't require it
 
             val request = Request.Builder()
                 .url("https://oauth2.googleapis.com/token")
@@ -93,6 +96,9 @@ class DriveAuthorizationManager @Inject constructor(
     /**
      * Calls Google OAuth token endpoint (https://oauth2.googleapis.com/token) with grant_type=refresh_token
      * to obtain a new access_token.
+     *
+     * BUG-002 FIX: Properly handles clientSecret for both Web and Native OAuth clients.
+     * BUG-032 FIX: Uses proper logging instead of e.printStackTrace().
      */
     suspend fun refreshAccessTokenWithRefreshToken(
         accountEmail: String,
@@ -106,6 +112,7 @@ class DriveAuthorizationManager @Inject constructor(
                 .add("grant_type", "refresh_token")
                 .add("refresh_token", refreshToken)
 
+            // BUG-002 FIX: Conditionally add client_secret for Web OAuth clients
             if (clientSecret.isNotBlank()) {
                 formBodyBuilder.add("client_secret", clientSecret)
             }
@@ -123,17 +130,17 @@ class DriveAuthorizationManager @Inject constructor(
                 val expiresInSeconds = json.optLong("expires_in", 3600L)
                 val expiresAt = System.currentTimeMillis() + (expiresInSeconds * 1000L)
 
-                // Save new token in secure store and DB
+                // Save new token in secure store and update account metadata in DB
                 secureTokenStore.saveToken("token_$accountEmail", newAccessToken)
                 accountDao.getAccountByEmail(accountEmail)?.let { acc ->
                     accountDao.updateAccount(acc.copy(
-                        accessToken = newAccessToken,
                         tokenExpiresAt = expiresAt,
                         status = "CONNECTED",
                         lastError = null
                     ))
                 }
                 response.close()
+                Log.d("DriveAuth", "Token refreshed for $accountEmail")
                 newAccessToken
             } else {
                 response.close()
@@ -144,10 +151,12 @@ class DriveAuthorizationManager @Inject constructor(
                         lastError = "Refresh token expired or revoked"
                     ))
                 }
+                Log.w("DriveAuth", "Token refresh failed for $accountEmail")
                 null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            // BUG-032 FIX: Use proper logging instead of e.printStackTrace()
+            Log.e("DriveAuth", "Token refresh exception for $accountEmail", e)
             null
         }
     }

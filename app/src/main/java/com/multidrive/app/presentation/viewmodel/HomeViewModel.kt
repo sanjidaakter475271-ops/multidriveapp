@@ -13,6 +13,7 @@ import com.multidrive.app.domain.repository.UploadRepository
 import com.multidrive.app.domain.usecase.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -51,12 +52,16 @@ class HomeViewModel @Inject constructor(
     private val _actionState = MutableStateFlow<ActionState>(ActionState.Idle)
     val actionState: StateFlow<ActionState> = _actionState.asStateFlow()
 
+    private var loadFilesJob: Job? = null
+
     init {
         loadFiles()
     }
 
     fun loadFiles(parentId: String? = null) {
-        viewModelScope.launch {
+        // BUG-009 FIX: Cancel previous coroutine before launching a new one
+        loadFilesJob?.cancel()
+        loadFilesJob = viewModelScope.launch {
             try {
                 listFilesUseCase(parentId).collect { files ->
                     _uiState.value = HomeUiState.Success(files)
@@ -167,6 +172,7 @@ class HomeViewModel @Inject constructor(
 
                 val accounts = accountRepository.getAllAccounts().first()
                 if (accounts.isEmpty()) {
+                    tempFile.delete() // Clean up temp file if no accounts available
                     _actionState.value = ActionState.Error("No connected Google Drive accounts to upload to")
                     return@launch
                 }
@@ -193,6 +199,15 @@ class HomeViewModel @Inject constructor(
                 _actionState.value = ActionState.Error(e.message ?: "Failed to queue upload")
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        loadFilesJob?.cancel()
+        // BUG-015 FIX: Clean up any orphaned upload_* temp files in cacheDir on ViewModel clear
+        try {
+            context.cacheDir.listFiles { file -> file.name.startsWith("upload_") }?.forEach { it.delete() }
+        } catch (_: Exception) {}
     }
 
     fun resetActionState() {

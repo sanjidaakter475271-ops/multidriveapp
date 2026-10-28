@@ -56,7 +56,8 @@ class AccountRepositoryImpl @Inject constructor(
         isActive = isActive,
         sortOrder = sortOrder,
         refreshToken = refreshToken,
-        accessToken = accessToken,
+        // BUG-010 FIX: accessToken removed from entity
+        // accessToken = accessToken,
         tokenExpiresAt = tokenExpiresAt,
         googleSubjectId = googleSubjectId,
         status = status,
@@ -75,7 +76,8 @@ class AccountRepositoryImpl @Inject constructor(
         isActive = isActive,
         sortOrder = sortOrder,
         refreshToken = refreshToken,
-        accessToken = accessToken,
+        // BUG-010 FIX: accessToken removed from entity
+        // accessToken = accessToken,
         tokenExpiresAt = tokenExpiresAt,
         googleSubjectId = googleSubjectId,
         status = status,

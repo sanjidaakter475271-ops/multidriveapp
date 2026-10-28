@@ -22,4 +22,11 @@ object DriveErrorMapper {
             else -> DriveError.Unknown(message ?: "HTTP Error $code")
         }
     }
+
+    /**
+     * BUG-029 FIX: Convert an exception to a DriveError for consistent error handling
+     */
+    fun mapException(e: Exception): DriveError {
+        return if (e is DriveError) e else DriveError.Unknown(e.message ?: e.javaClass.simpleName)
+    }
 }

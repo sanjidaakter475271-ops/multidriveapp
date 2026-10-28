@@ -5,6 +5,7 @@ import com.multidrive.app.data.local.dao.AccountDao
 import com.multidrive.app.data.local.dao.FileMetaDao
 import com.multidrive.app.data.local.entity.FileMetaEntity
 import com.multidrive.app.data.remote.DriveApiService
+import com.multidrive.app.data.remote.DriveErrorMapper
 import com.multidrive.app.domain.model.DriveFile
 import com.multidrive.app.domain.repository.FileRepository
 import kotlinx.coroutines.flow.Flow
@@ -58,7 +59,9 @@ class FileRepositoryImpl @Inject constructor(
     }
 
     override suspend fun searchFiles(query: String): Flow<List<DriveFile>> {
-        return fileMetaDao.searchFiles(query).map { entities ->
+        // BUG-018 FIX: Use case-insensitive search
+        val formattedQuery = "%$query%"
+        return fileMetaDao.searchFilesCaseInsensitive(formattedQuery).map { entities ->
             entities.map { it.toDomain() }
         }
     }
@@ -74,32 +77,46 @@ class FileRepositoryImpl @Inject constructor(
                 query += " and '$folderId' in parents"
             }
 
-            val response = driveApiService.listFiles(
-                authorization = authHeader,
-                query = query,
-                fields = "files(id,name,mimeType,size,parents,createdTime,modifiedTime,trashed,webViewLink,webContentLink)"
-            )
+            var pageToken: String? = null
+            val allRemoteFiles = mutableListOf<FileMetaEntity>()
 
-            val remoteFiles = (response.files).map { remote ->
-                FileMetaEntity(
-                    driveFileId = remote.id,
-                    name = remote.name,
-                    parentId = remote.parents?.firstOrNull(),
-                    mimeType = remote.mimeType,
-                    size = remote.size ?: 0L,
-                    accountId = accountId,
-                    createdTime = System.currentTimeMillis(),
-                    modifiedTime = System.currentTimeMillis(),
-                    isFolder = remote.mimeType == "application/vnd.google-apps.folder",
-                    webViewLink = remote.webViewLink,
-                    webContentLink = remote.webContentLink
+            // BUG-026 FIX: Implement pagination with nextPageToken for large folders
+            do {
+                val response = driveApiService.listFiles(
+                    authorization = authHeader,
+                    query = query,
+                    pageSize = 100,
+                    pageToken = pageToken,
+                    fields = "nextPageToken,files(id,name,mimeType,size,parents,createdTime,modifiedTime,trashed,webViewLink,webContentLink)"
                 )
-            }
 
-            fileMetaDao.insertFiles(remoteFiles)
-            Result.success(remoteFiles.map { it.toDomain() })
+                val remoteFiles = response.files.map { remote ->
+                    FileMetaEntity(
+                        driveFileId = remote.id,
+                        name = remote.name,
+                        parentId = remote.parents?.firstOrNull(),
+                        mimeType = remote.mimeType,
+                        size = remote.size ?: 0L,
+                        accountId = accountId,
+                        createdTime = System.currentTimeMillis(),
+                        modifiedTime = System.currentTimeMillis(),
+                        isFolder = remote.mimeType == "application/vnd.google-apps.folder",
+                        webViewLink = remote.webViewLink,
+                        webContentLink = remote.webContentLink
+                    )
+                }
+
+                allRemoteFiles.addAll(remoteFiles)
+                pageToken = response.nextPageToken
+            } while (pageToken != null)
+
+            // BUG-019 FIX: Use REPLACE strategy to merge remote data with local
+            // This ensures local metadata is updated with remote state
+            fileMetaDao.insertFiles(allRemoteFiles)
+            Result.success(allRemoteFiles.map { it.toDomain() })
         } catch (e: Exception) {
-            Result.failure(e)
+            // BUG-029 FIX: Map error using DriveErrorMapper
+            Result.failure(DriveErrorMapper.mapException(e))
         }
     }
 
@@ -113,7 +130,8 @@ class FileRepositoryImpl @Inject constructor(
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            // BUG-029 FIX: Map error using DriveErrorMapper
+            Result.failure(DriveErrorMapper.mapException(e))
         }
     }
 
@@ -128,7 +146,8 @@ class FileRepositoryImpl @Inject constructor(
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            // BUG-029 FIX: Map error using DriveErrorMapper
+            Result.failure(DriveErrorMapper.mapException(e))
         }
     }
 

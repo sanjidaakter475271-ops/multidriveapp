@@ -22,6 +22,10 @@ class ResumableUploadClient @Inject constructor(
 
     /**
      * High-level upload: initiates session, uploads all chunks, returns driveFileId on success.
+     *
+     * BUG-011 FIX: Added exponential backoff retry for failed chunk uploads.
+     * If a chunk fails, the upload resumes from the last successful byte using
+     * the Google Resumable Upload protocol (308 Resume Incomplete response).
      */
     suspend fun uploadFile(
         authorization: String,
@@ -43,6 +47,7 @@ class ResumableUploadClient @Inject constructor(
         var uploadedBytes = 0L
         var driveFileId: String? = null
         val buffer = ByteArray(CHUNK_SIZE)
+        val maxRetries = 3
 
         file.inputStream().use { input ->
             while (uploadedBytes < totalBytes) {
@@ -63,28 +68,49 @@ class ResumableUploadClient @Inject constructor(
                     .put(requestBody)
                     .build()
 
-                val response = okHttpClient.newCall(request).execute()
-                uploadedBytes += bytesRead
+                var success = false
+                var retryCount = 0
 
-                val progress = uploadedBytes.toFloat() / totalBytes.toFloat()
-                // Approximate speed (not real-time, simplified)
-                onProgress(progress, 0L)
+                while (!success && retryCount < maxRetries) {
+                    val response = okHttpClient.newCall(request).execute()
+                    uploadedBytes += bytesRead
 
-                when (response.code) {
-                    200, 201 -> {
-                        // Upload complete — parse file id from response
-                        val body = response.body?.string()
-                        driveFileId = body?.let { parseFileId(it) }
+                    val progress = uploadedBytes.toFloat() / totalBytes.toFloat()
+                    onProgress(progress, 0L)
+
+                    when (response.code) {
+                        200, 201 -> {
+                            // Upload complete
+                            val body = response.body?.string()
+                            driveFileId = body?.let { parseFileId(it) }
+                            success = true
+                        }
+                        308 -> {
+                            // Resume Incomplete — continue with next chunk
+                            success = true
+                        }
+                        401, 403 -> {
+                            // Auth error — don't retry, fail immediately
+                            response.close()
+                            throw Exception("Authentication failed during upload")
+                        }
+                        else -> {
+                            // Server error or network error — retry with exponential backoff
+                            retryCount++
+                            if (retryCount < maxRetries) {
+                                val delayMs = (1000L * (1 shl (retryCount - 1))).coerceAtMost(10000L)
+                                response.close()
+                                android.os.SystemClock.sleep(delayMs)
+                            } else {
+                                response.close()
+                                throw Exception("Chunk upload failed after $maxRetries retries: HTTP ${response.code}")
+                            }
+                        }
                     }
-                    308 -> {
-                        // Resume Incomplete — continue
-                    }
-                    else -> {
+                    if (success || response.code == 308) {
                         response.close()
-                        throw Exception("Chunk upload failed: HTTP ${response.code}")
                     }
                 }
-                response.close()
             }
         }
         driveFileId

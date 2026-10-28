@@ -1,6 +1,8 @@
 package com.multidrive.app.di
 
+import com.multidrive.app.data.auth.TokenProvider
 import com.multidrive.app.data.remote.DriveApiService
+import com.multidrive.app.data.remote.DriveAuthInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,12 +20,16 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(tokenProvider: TokenProvider): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // BUG-007 FIX: Use BASIC level for release builds to avoid leaking request/response bodies
+            // In production, BODY level exposes file names, sizes, metadata in logcat
+            level = HttpLoggingInterceptor.Level.BASIC
         }
         return OkHttpClient.Builder()
             .addInterceptor(logging)
+            // BUG-013 FIX: Add DriveAuthInterceptor to automatically attach tokens to requests
+            .addInterceptor(DriveAuthInterceptor { tokenProvider.getCurrentToken() })
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)

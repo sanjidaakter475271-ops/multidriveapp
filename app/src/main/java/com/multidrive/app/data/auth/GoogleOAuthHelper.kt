@@ -19,8 +19,10 @@ import androidx.browser.customtabs.CustomTabsIntent
  * 5. App exchanges code at https://oauth2.googleapis.com/token for access_token + refresh_token.
  */
 object GoogleOAuthHelper {
-    const val DEFAULT_CLIENT_ID = "1053073934306-multidrive.apps.googleusercontent.com"
-    const val DEFAULT_REDIRECT_URI = "https://developers.google.com/oauthplayground"
+    // BUG-023 FIX: Read client ID from BuildConfig (generated from local.properties)
+    const val DEFAULT_CLIENT_ID = BuildConfig.GOOGLE_CLIENT_ID
+    // BUG-001 FIX: Use the backend redirect URI instead of Google OAuth Playground
+    const val DEFAULT_REDIRECT_URI = "https://multidrive-auth.example.com/oauth/callback"
     const val SCOPE = "https://www.googleapis.com/auth/drive"
 
     /**

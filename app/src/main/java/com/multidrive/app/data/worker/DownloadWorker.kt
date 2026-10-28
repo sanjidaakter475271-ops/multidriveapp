@@ -2,6 +2,7 @@ package com.multidrive.app.data.worker
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -31,7 +32,7 @@ class DownloadWorker @AssistedInject constructor(
         val token = authManager.getAccessToken(account.email) ?: return@withContext Result.failure()
 
         try {
-            val response = driveApiService.downloadFile("Bearer $token", driveFileId)
+            val response = driveApiService.downloadFileStream("Bearer $token", driveFileId)
             val destUri = Uri.parse(destinationUriString)
             context.contentResolver.openOutputStream(destUri)?.use { output ->
                 response.byteStream().use { input ->
@@ -40,7 +41,8 @@ class DownloadWorker @AssistedInject constructor(
             }
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
+            // BUG-032 FIX: Use proper logging instead of e.printStackTrace()
+            Log.e("DownloadWorker", "Failed to download file $driveFileId", e)
             Result.failure()
         }
     }

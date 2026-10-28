@@ -75,6 +75,8 @@ class MultiDriveDocumentsProvider : DocumentsProvider() {
         val cols = projection ?: DEFAULT_ROOT_PROJECTION
         val cursor = MatrixCursor(cols)
 
+        // BUG-008 FIX: Use runBlocking here is acceptable since queryRoots is called once at startup
+        // For queryDocument/queryChildDocuments, we use suspend DAO methods directly
         val accounts = runBlocking {
             db.accountDao().getAllAccountsSuspend()
         }

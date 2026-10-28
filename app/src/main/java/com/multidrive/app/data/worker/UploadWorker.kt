@@ -1,7 +1,6 @@
 package com.multidrive.app.data.worker
 
 import android.content.Context
-import android.net.Uri
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -54,13 +53,19 @@ class UploadWorker @AssistedInject constructor(
             if (driveFileId != null) {
                 uploadRepository.updateTask(task.copy(status = "completed", progress = 1.0f, driveFileId = driveFileId))
                 fileRepository.fetchRemoteFiles(account.id, task.parentDriveFolderId)
+                // BUG-020 FIX: Delete temp file after successful upload
+                File(task.localPath).delete()
                 return Result.success(workDataOf("DRIVE_FILE_ID" to driveFileId))
             } else {
                 uploadRepository.updateTask(task.copy(status = "failed", lastError = "Upload failed"))
+                // BUG-020 FIX: Also delete temp file on failure
+                File(task.localPath).delete()
                 return Result.failure()
             }
         } catch (e: Exception) {
             uploadRepository.updateTask(task.copy(status = "failed", lastError = e.localizedMessage))
+            // BUG-020 FIX: Delete temp file on exception
+            File(task.localPath).delete()
             return Result.failure()
         }
     }

@@ -47,7 +47,8 @@ const {
   REDIRECT_URI,
   BASE_URL,
   STATE_SECRET = 'change_me',
-  PORT = 3000
+  PORT = 3000,
+  API_TOKEN = '' // Optional API token for /api/token auth
 } = process.env;
 
 const SCOPES = [
@@ -56,12 +57,89 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile'
 ].join(' ');
 
-// In-memory token store — replace with encrypted DB in production
-// Structure: { email: { accessToken, refreshToken, expiresAt, email, displayName, photoUrl } }
-const tokenStore = {};
+// ─────────────────────────────────────────────
+// Persistent Token Store (JSON file on disk)
+// Replaces in-memory store so tokens survive restarts
+// ─────────────────────────────────────────────
+const fs = require('fs');
+const path = require('path');
+const TOKEN_STORE_FILE = path.join(__dirname, 'token-store.json');
+const STATE_STORE_FILE = path.join(__dirname, 'state-store.json');
 
-// In-memory CSRF state store — replace with Redis in production
-const stateStore = new Map();
+// Load tokens from disk on startup
+function loadTokenStore() {
+  try {
+    if (fs.existsSync(TOKEN_STORE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(TOKEN_STORE_FILE, 'utf8'));
+      return data || {};
+    }
+  } catch (e) {
+    console.error('[store] Failed to load token store:', e.message);
+  }
+  return {};
+}
+
+function saveTokenStore(store) {
+  try {
+    fs.writeFileSync(TOKEN_STORE_FILE, JSON.stringify(store, null, 2), 'utf8');
+  } catch (e) {
+    console.error('[store] Failed to save token store:', e.message);
+  }
+}
+
+// Load states from disk on startup
+function loadStateStore() {
+  try {
+    if (fs.existsSync(STATE_STORE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(STATE_STORE_FILE, 'utf8'));
+      return new Map(Object.entries(data || {}));
+    }
+  } catch (e) {
+    console.error('[store] Failed to load state store:', e.message);
+  }
+  return new Map();
+}
+
+function saveStateStore(map) {
+  try {
+    const obj = {};
+    for (const [key, val] of map.entries()) {
+      obj[key] = val;
+    }
+    fs.writeFileSync(STATE_STORE_FILE, JSON.stringify(obj, null, 2), 'utf8');
+  } catch (e) {
+    console.error('[store] Failed to save state store:', e.message);
+  }
+}
+
+// In-memory stores (also persisted to disk)
+const tokenStore = loadTokenStore();
+const stateStore = loadStateStore();
+
+// ─────────────────────────────────────────────
+// HTTPS Enforcement Middleware (BUG-016)
+// ─────────────────────────────────────────────
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.header('x-forwarded-proto') !== 'https') {
+    return res.redirect(`https://${req.header('host')}${req.url}`);
+  }
+  next();
+});
+
+// ─────────────────────────────────────────────
+// API Token Authentication Middleware (BUG-004)
+// ─────────────────────────────────────────────
+function apiTokenAuth(req, res, next) {
+  if (!API_TOKEN) {
+    // If no API_TOKEN is set, allow (for local/dev use only)
+    return next();
+  }
+  const token = req.header('Authorization') || req.query.api_token;
+  if (!token || token !== API_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized — valid API token required' });
+  }
+  next();
+}
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -92,6 +170,7 @@ app.get('/auth/start', (req, res) => {
 
   // Store state with expiry (10 minutes)
   stateStore.set(state, { createdAt: Date.now() });
+  saveStateStore(stateStore); // Persist to disk (BUG-022)
 
   // Clean up old states
   for (const [key, val] of stateStore.entries()) {
@@ -117,7 +196,17 @@ app.get('/auth/start', (req, res) => {
 // Exchanges authorization code for access + refresh tokens
 // Then redirects to multidrive://auth-done deep link
 // ─────────────────────────────────────────────
-app.get('/oauth/callback', async (req, res) => {
+
+// BUG-017: Rate limiter specifically for OAuth callback
+const oauthCallbackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 requests per 15 minutes per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many OAuth callback attempts. Please try again later.' }
+});
+
+app.get('/oauth/callback', oauthCallbackLimiter, async (req, res) => {
   const { code, state, error } = req.query;
 
   // Handle user-denied or error case
@@ -126,12 +215,29 @@ app.get('/oauth/callback', async (req, res) => {
     return res.redirect(`multidrive://auth-done?status=error&error=${encodeURIComponent(error || 'No authorization code')}`);
   }
 
-  // CSRF state verification
-  if (!state || !stateStore.has(state)) {
-    console.error('[oauth/callback] Invalid or expired state parameter');
-    return res.redirect('multidrive://auth-done?status=error&error=invalid_state');
+  // BUG-003: CSRF state parameter validation with expiry check
+  if (!state) {
+    console.error('[oauth/callback] Missing state parameter');
+    return res.redirect(`multidrive://auth-done?status=error&error=${encodeURIComponent('Missing state parameter')}`);
   }
+
+  const storedState = stateStore.get(state);
+  if (!storedState) {
+    console.error('[oauth/callback] Invalid or expired state parameter');
+    return res.redirect(`multidrive://auth-done?status=error&error=${encodeURIComponent('Invalid or expired state')}`);
+  }
+
+  // BUG-022: Check state expiry (10-minute limit) and clean up
+  if (Date.now() - storedState.createdAt > 10 * 60 * 1000) {
+    console.error('[oauth/callback] State expired');
+    stateStore.delete(state);
+    saveStateStore(stateStore);
+    return res.redirect(`multidrive://auth-done?status=error&error=${encodeURIComponent('State expired')}`);
+  }
+
+  // BUG-022: Clean up state immediately after validation
   stateStore.delete(state);
+  saveStateStore(stateStore);
 
   try {
     // Exchange authorization code for access_token + refresh_token
@@ -172,6 +278,9 @@ app.get('/oauth/callback', async (req, res) => {
       storageUsed: 0
     };
 
+    // BUG-005 FIX: Persist tokens to disk
+    saveTokenStore(tokenStore);
+
     console.log(`[oauth/callback] Account authorized: ${email}`);
 
     // Redirect app via deep link: multidrive://auth-done?account=email&status=ok
@@ -188,7 +297,8 @@ app.get('/oauth/callback', async (req, res) => {
 // GET /api/token/:email
 // Returns access_token (refreshing if needed)
 // ─────────────────────────────────────────────
-app.get('/api/token/:email', async (req, res) => {
+// BUG-004 FIX: API token authentication required
+app.get('/api/token/:email', apiTokenAuth, async (req, res) => {
   const { email } = req.params;
   const account = tokenStore[email];
 
@@ -211,6 +321,7 @@ app.get('/api/token/:email', async (req, res) => {
       account.expiresAt = Date.now() + (refreshResponse.data.expires_in * 1000);
       account.status = 'CONNECTED';
       console.log(`[api/token] Refreshed token for ${email}`);
+      saveTokenStore(tokenStore); // BUG-005: Persist after refresh
     } catch (err) {
       console.error(`[api/token] Refresh failed for ${email}:`, err.response?.data || err.message);
       account.status = 'REAUTH_REQUIRED';
@@ -230,7 +341,7 @@ app.get('/api/token/:email', async (req, res) => {
 // API: List all connected accounts
 // GET /api/accounts
 // ─────────────────────────────────────────────
-app.get('/api/accounts', (req, res) => {
+app.get('/api/accounts', apiTokenAuth, (req, res) => {
   const accounts = Object.values(tokenStore).map(({ email, displayName, photoUrl, googleSubjectId, expiresAt, status }) => ({
     email,
     displayName,
@@ -246,7 +357,7 @@ app.get('/api/accounts', (req, res) => {
 // API: Remove account (disconnect)
 // DELETE /api/accounts/:email
 // ─────────────────────────────────────────────
-app.delete('/api/accounts/:email', async (req, res) => {
+app.delete('/api/accounts/:email', apiTokenAuth, async (req, res) => {
   const { email } = req.params;
   const account = tokenStore[email];
 
@@ -258,6 +369,7 @@ app.delete('/api/accounts/:email', async (req, res) => {
   }
 
   delete tokenStore[email];
+  saveTokenStore(tokenStore); // BUG-005: Persist after deletion
   res.json({ success: true });
 });
 

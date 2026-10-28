@@ -27,6 +27,10 @@ interface FileMetaDao {
     @Query("SELECT * FROM files WHERE name LIKE '%' || :query || '%' AND trashed = 0")
     fun searchFiles(query: String): Flow<List<FileMetaEntity>>
 
+    // BUG-018 FIX: Case-insensitive search using COLLATE NOCASE
+    @Query("SELECT * FROM files WHERE LOWER(name) LIKE LOWER(:query) AND trashed = 0")
+    fun searchFilesCaseInsensitive(query: String): Flow<List<FileMetaEntity>>
+
     @Query("SELECT * FROM files WHERE id = :id LIMIT 1")
     suspend fun getFileById(id: Int): FileMetaEntity?
 

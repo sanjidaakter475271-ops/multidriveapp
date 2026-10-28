@@ -12,7 +12,8 @@ data class Account(
     val isActive: Boolean = true,
     val sortOrder: Int = 0,
     val refreshToken: String? = null,
-    val accessToken: String? = null,
+    // BUG-010 FIX: accessToken removed — only stored in SecureTokenStore (encrypted)
+    // val accessToken: String? = null,
     val tokenExpiresAt: Long = 0L,
     val googleSubjectId: String? = null,
     val status: String = "CONNECTED",

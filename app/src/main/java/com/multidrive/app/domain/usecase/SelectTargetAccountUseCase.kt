@@ -7,7 +7,8 @@ import javax.inject.Singleton
 
 @Singleton
 class SelectTargetAccountUseCase @Inject constructor() {
-    private var roundRobinIndex = 0
+    // BUG-012 FIX: Use AtomicReference instead of mutable var for thread-safe round-robin
+    private val roundRobinIndex = java.util.concurrent.atomic.AtomicInteger(0)
 
     fun execute(
         accounts: List<Account>,
@@ -45,8 +46,9 @@ class SelectTargetAccountUseCase @Inject constructor() {
                 } else {
                     eligibleAccounts
                 }
-                val selected = ordered[roundRobinIndex % ordered.size]
-                roundRobinIndex++
+                // BUG-012 FIX: Use AtomicInteger for thread-safe increment
+                val selected = ordered[roundRobinIndex.get() % ordered.size]
+                roundRobinIndex.incrementAndGet()
                 selected
             }
             RoutingMode.PRIORITY -> {

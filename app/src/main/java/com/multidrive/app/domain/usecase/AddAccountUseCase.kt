@@ -46,7 +46,8 @@ class AddAccountUseCase @Inject constructor(
                 isActive = true,
                 sortOrder = existing?.sortOrder ?: 0,
                 refreshToken = refreshToken ?: existing?.refreshToken,
-                accessToken = token,
+                // BUG-010 FIX: accessToken removed — only stored in SecureTokenStore (encrypted)
+                // accessToken = token,  // REMOVED
                 tokenExpiresAt = expiresAt,
                 googleSubjectId = subjectId,
                 status = "CONNECTED",

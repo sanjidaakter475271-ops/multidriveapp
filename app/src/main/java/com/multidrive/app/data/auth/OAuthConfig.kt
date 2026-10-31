@@ -22,7 +22,8 @@ object OAuthConfig {
     const val BACKEND_BASE_URL = BuildConfig.BACKEND_BASE_URL
 
     /** Backend endpoint that starts the Google OAuth flow */
-    const val AUTH_START_URL = "$BACKEND_BASE_URL/auth/start"
+    val AUTH_START_URL: String
+        get() = "$BACKEND_BASE_URL/auth/start"
 
     /**
      * Deep link scheme/host that the backend redirects to after OAuth completes.

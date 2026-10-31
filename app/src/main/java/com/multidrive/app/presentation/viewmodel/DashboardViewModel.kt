@@ -20,12 +20,11 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = accountRepository.getAllAccounts()
-        .catch { e ->
-            // BUG-014 FIX: Catch errors BEFORE map so upstream errors are handled
-            emit(DashboardUiState.Error(e.message ?: "Failed to load dashboard"))
-        }
         .map { accounts ->
             DashboardUiState.Success(accounts)
+        }
+        .catch { e ->
+            emit(DashboardUiState.Error(e.message ?: "Failed to load dashboard"))
         }
         .stateIn(
             scope = viewModelScope,

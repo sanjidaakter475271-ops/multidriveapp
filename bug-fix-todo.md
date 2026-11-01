@@ -60,3 +60,43 @@
 - [x] **BUG-031** Unused import in UploadWorker — Remove `android.net.Uri`
 - [x] **BUG-032** e.printStackTrace() instead of proper logging — Use android.util.Log
 - [x] **BUG-033** Missing ProGuard rules — Add Retrofit/Gson/Room rules
+
+
+---
+
+## Phase 8: 🛠 CI Build Errors (`gradle assembleDebug`)
+
+Root cause of `BUILD FAILED` on `:app:compileDebugKotlin`:
+
+- [x] **BUILD-01** `Unresolved reference 'BuildConfig'` in `GoogleOAuthHelper.kt:23` and `OAuthConfig.kt:22`
+      — AGP generates `BuildConfig` in the **namespace package** `com.multidrive.app`, so files in
+      sub-packages (`com.multidrive.app.data.auth`) must `import com.multidrive.app.BuildConfig`.
+      Fix: added the import to both files.
+- [x] **BUILD-02** `const val` initialized from `BuildConfig` — generated BuildConfig fields are runtime
+      (build-time generated) values, not Kotlin compile-time constants. `const val` requires a compile-time
+      constant literal, so it fails to compile.
+      Fix: changed to `val DEFAULT_CLIENT_ID: String` / `val BACKEND_BASE_URL: String`.
+      (Callers in `DriveAuthorizationManager.kt` use them as default parameters — works with `val`.)
+- [x] **BUILD-03** `DashboardViewModel.kt:27` type mismatch — `Flow<Account>.map { DashboardUiState.Success(...) }`
+      infers `Flow<DashboardUiState.Success>`, so the following `catch { emit(DashboardUiState.Error(...)) }`
+      is rejected. Fix: explicit generics `.map<List<Account>, DashboardUiState> { ... }`.
+- [x] **BUILD-04** `DEFAULT_REDIRECT_URI` hardcoded to placeholder domain — now derived from
+      `OAuthConfig.BACKEND_CALLBACK_URL` (`$BACKEND_BASE_URL/oauth/callback`) so BUG-001/BUG-006 stay consistent.
+- [x] **BUILD-05** Reverted stray edit in `app/build.gradle.kts` that called `buildConfigField` directly inside
+      the `android { }` block (AGP DSL exposes `buildConfigField` only on `defaultConfig` / `buildTypes`).
+      Fields now live in `defaultConfig`, which applies to debug and release.
+
+### Optional hardening (not blocking the build)
+
+- [x] Added a Gradle wrapper (`gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar`,
+      `gradle-wrapper.properties`) pinned to **Gradle 8.9** — AGP 8.5 requires Gradle >= 8.7 and
+      breaks on Gradle 9.x. `.github/workflows/android-build.yml` now uses
+      `gradle-version: wrapper` + `./gradlew --no-daemon assembleDebug` (plus a `./gradlew --version`
+      step) instead of the bare `gradle` that picked the runner's Gradle 9.8.2.
+- [x] Added `sdk.dir` / `GOOGLE_CLIENT_ID` / `BACKEND_BASE_URL` to `local.properties`.
+      `app/build.gradle.kts` now reads that file for the OAuth values (Gradle does not expose
+      `local.properties` as project properties), with priority
+      `-P` command line > `local.properties` > default, so CI still builds from the defaults.
+- [!] Local verification still needs a JDK 17 + Android SDK (compileSdk 34): `sdk.dir` points at
+      `~/Android/sdk`, which is not installed here (`/opt/android-sdk` exists but has no
+      `platforms/android-34`), so the build is verified in GitHub Actions.

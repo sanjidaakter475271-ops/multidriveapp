@@ -22,10 +22,19 @@ android {
             useSupportLibrary = true
         }
 
-        // BUG-006 & BUG-023 FIX: Provide build config fields from properties or defaults
-        val clientId = project.findProperty("GOOGLE_CLIENT_ID") as? String
+        // BUG-006 & BUG-023 FIX: Provide build config fields from properties or defaults.
+        // Override priority: -P command line > local.properties > default. Gradle does not
+        // expose local.properties as project properties, so it is read explicitly here.
+        val localProps = java.util.Properties()
+        val localPropertiesFile = project.file("../local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { localProps.load(it) }
+        }
+        val clientId = (project.findProperty("GOOGLE_CLIENT_ID") as? String)
+            ?: localProps.getProperty("GOOGLE_CLIENT_ID")
             ?: "1053073934306-multidrive.apps.googleusercontent.com"
-        val backendUrl = project.findProperty("BACKEND_BASE_URL") as? String
+        val backendUrl = (project.findProperty("BACKEND_BASE_URL") as? String)
+            ?: localProps.getProperty("BACKEND_BASE_URL")
             ?: "https://multidrive-auth.example.com"
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$clientId\"")
         buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")

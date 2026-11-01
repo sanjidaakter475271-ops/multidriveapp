@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
+import com.multidrive.app.BuildConfig
 
 /**
  * Handles Google OAuth 2.0 Authorization Code Flow.
@@ -20,9 +21,12 @@ import androidx.browser.customtabs.CustomTabsIntent
  */
 object GoogleOAuthHelper {
     // BUG-023 FIX: Read client ID from BuildConfig (generated from local.properties)
-    const val DEFAULT_CLIENT_ID = BuildConfig.GOOGLE_CLIENT_ID
-    // BUG-001 FIX: Use the backend redirect URI instead of Google OAuth Playground
-    const val DEFAULT_REDIRECT_URI = "https://multidrive-auth.example.com/oauth/callback"
+    // `val` (not `const val`): BuildConfig fields are generated at build time and are not
+    // Kotlin compile-time constants.
+    val DEFAULT_CLIENT_ID: String = BuildConfig.GOOGLE_CLIENT_ID
+    // BUG-001 FIX: Use the backend redirect URI instead of Google OAuth Playground.
+    // Derived from OAuthConfig.BACKEND_BASE_URL so it stays configurable per environment.
+    val DEFAULT_REDIRECT_URI: String = OAuthConfig.BACKEND_CALLBACK_URL
     const val SCOPE = "https://www.googleapis.com/auth/drive"
 
     /**

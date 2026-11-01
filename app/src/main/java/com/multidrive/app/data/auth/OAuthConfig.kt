@@ -1,5 +1,7 @@
 package com.multidrive.app.data.auth
 
+import com.multidrive.app.BuildConfig
+
 /**
  * Central configuration for Google OAuth via Backend + Reverse Proxy.
  *
@@ -18,12 +20,19 @@ object OAuthConfig {
      * Base URL of your backend server.
      * BUG-006 FIX: Read from BuildConfig for easy configuration per environment.
      * Set in local.properties: BACKEND_BASE_URL=https://multidrive-auth.yourdomain.com
+     *
+     * NOTE: `val` (not `const val`) — BuildConfig fields are generated at build time, so
+     * they are not Kotlin compile-time constants and cannot initialize a `const val`.
      */
-    const val BACKEND_BASE_URL = BuildConfig.BACKEND_BASE_URL
+    val BACKEND_BASE_URL: String = BuildConfig.BACKEND_BASE_URL
 
     /** Backend endpoint that starts the Google OAuth flow */
     val AUTH_START_URL: String
         get() = "$BACKEND_BASE_URL/auth/start"
+
+    /** Backend endpoint Google redirects to with the authorization code */
+    val BACKEND_CALLBACK_URL: String
+        get() = "$BACKEND_BASE_URL/oauth/callback"
 
     /**
      * Deep link scheme/host that the backend redirects to after OAuth completes.

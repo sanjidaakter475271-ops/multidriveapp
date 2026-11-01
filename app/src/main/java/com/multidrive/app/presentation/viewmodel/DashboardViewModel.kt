@@ -20,7 +20,9 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = accountRepository.getAllAccounts()
-        .map { accounts ->
+        // Explicit generics: without them `map` infers Flow<DashboardUiState.Success>,
+        // which makes `catch { emit(DashboardUiState.Error(...)) }` a type mismatch.
+        .map<List<Account>, DashboardUiState> { accounts ->
             DashboardUiState.Success(accounts)
         }
         .catch { e ->

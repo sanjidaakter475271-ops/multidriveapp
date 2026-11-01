@@ -24,9 +24,16 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          # Use the checked-in wrapper (pinned Gradle 8.9) instead of the runner's
+          # own Gradle, which is 9.x and incompatible with AGP 8.5.
+          gradle-version: wrapper
+
+      - name: Verify pinned Gradle wrapper
+        run: ./gradlew --version
 
       - name: Build Debug APK
-        run: gradle assembleDebug
+        run: ./gradlew --no-daemon assembleDebug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -25,7 +27,7 @@ android {
         // BUG-006 & BUG-023 FIX: Provide build config fields from properties or defaults.
         // Override priority: -P command line > local.properties > default. Gradle does not
         // expose local.properties as project properties, so it is read explicitly here.
-        val localProps = java.util.Properties()
+        val localProps = Properties()
         val localPropertiesFile = project.file("../local.properties")
         if (localPropertiesFile.exists()) {
             localPropertiesFile.inputStream().use { localProps.load(it) }

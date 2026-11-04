@@ -8,6 +8,12 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val localProps = Properties()
+val localPropertiesFile = project.file("../local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProps.load(it) }
+}
+
 android {
     namespace = "com.multidrive.app"
     compileSdk = 34
@@ -27,17 +33,12 @@ android {
         // BUG-006 & BUG-023 FIX: Provide build config fields from properties or defaults.
         // Override priority: -P command line > local.properties > default. Gradle does not
         // expose local.properties as project properties, so it is read explicitly here.
-        val localProps = Properties()
-        val localPropertiesFile = project.file("../local.properties")
-        if (localPropertiesFile.exists()) {
-            localPropertiesFile.inputStream().use { localProps.load(it) }
-        }
         val clientId = (project.findProperty("GOOGLE_CLIENT_ID") as? String)
             ?: localProps.getProperty("GOOGLE_CLIENT_ID")
-            ?: "1053073934306-multidrive.apps.googleusercontent.com"
+            ?: "321822730978-kglb6ds0voshouvt4u8fc43o08frt854.apps.googleusercontent.com"
         val webClientId = (project.findProperty("GOOGLE_WEB_CLIENT_ID") as? String)
             ?: localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
-            ?: ""
+            ?: "321822730978-o2nutosd54hmoeo4fre93k3i0onaq6u5.apps.googleusercontent.com"
         val backendUrl = (project.findProperty("BACKEND_BASE_URL") as? String)
             ?: localProps.getProperty("BACKEND_BASE_URL")
             ?: "https://multidrive-auth.example.com"
@@ -46,9 +47,19 @@ android {
         buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("${project.rootDir}/app/release.keystore")
+            storePassword = localProps.getProperty("KEYSTORE_PASSWORD") ?: "multidrive123"
+            keyAlias = "release"
+            keyPassword = localProps.getProperty("KEY_PASSWORD") ?: "multidrive123"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

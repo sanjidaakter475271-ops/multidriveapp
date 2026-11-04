@@ -12,7 +12,7 @@ public final class BuildConfig {
   // Field from default config.
   public static final String BACKEND_BASE_URL = "https://multidrive-auth.example.com";
   // Field from default config.
-  public static final String GOOGLE_CLIENT_ID = "1053073934306-multidrive.apps.googleusercontent.com";
+  public static final String GOOGLE_CLIENT_ID = "321822730978-kglb6ds0voshouvt4u8fc43o08frt854.apps.googleusercontent.com";
   // Field from default config.
-  public static final String GOOGLE_WEB_CLIENT_ID = "";
+  public static final String GOOGLE_WEB_CLIENT_ID = "321822730978-o2nutosd54hmoeo4fre93k3i0onaq6u5.apps.googleusercontent.com";
 }

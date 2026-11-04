@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.Crossfade
@@ -16,12 +17,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.multidrive.app.data.auth.OAuthConfig
 import com.multidrive.app.presentation.navigation.AppNavGraph
 import com.multidrive.app.presentation.splash.SnapchatSplashScreen
 import com.multidrive.app.presentation.theme.MultiDriveTheme
 import com.multidrive.app.presentation.viewmodel.AccountsViewModel
+import com.multidrive.app.presentation.viewmodel.AuthorizationEvent
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -32,6 +38,16 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) { /* permissions granted callback */ }
 
+    /**
+     * Launcher for the Google consent popup (PendingIntent from AuthorizationClient).
+     * When the user completes or cancels consent, the result arrives here.
+     */
+    private val consentLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        accountsViewModel.handleConsentResult(result.resultCode, result.data)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -39,6 +55,23 @@ class MainActivity : ComponentActivity() {
 
         // Handle deep link that launched this Activity from cold start
         handleOAuthDeepLink(intent)
+
+        // Collect authorization events — launch the Google consent popup when needed
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                accountsViewModel.authorizationEvent.collect { event ->
+                    when (event) {
+                        is AuthorizationEvent.Consent -> {
+                            val intentSenderRequest = IntentSenderRequest.Builder(event.pendingIntent)
+                                .build()
+                            consentLauncher.launch(intentSenderRequest)
+                            accountsViewModel.consumeAuthorizationEvent()
+                        }
+                        null -> { /* no-op */ }
+                    }
+                }
+            }
+        }
 
         setContent {
             MultiDriveTheme {

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.multidrive.app.data.auth.AuthorizationClientHelper
 import com.multidrive.app.data.auth.AuthorizationOutcome
 import com.multidrive.app.data.auth.DriveAuthorizationManager
+import com.multidrive.app.data.auth.OAuthConfig
 import com.multidrive.app.domain.model.Account
 import com.multidrive.app.domain.repository.AccountRepository
 import com.multidrive.app.domain.usecase.AddAccountUseCase
@@ -100,7 +101,11 @@ class AccountsViewModel @Inject constructor(
     }
 
     private suspend fun completeFromAuthCode(authCode: String) {
-        val exchangeResult = authManager.exchangeAuthorizationCodeWithoutRedirect(authCode.trim())
+        val exchangeResult = authManager.exchangeAuthorizationCodeWithoutRedirect(
+            authCode = authCode.trim(),
+            clientId = OAuthConfig.WEB_CLIENT_ID,
+            clientSecret = OAuthConfig.WEB_CLIENT_SECRET
+        )
         exchangeResult.fold(
             onSuccess = { tokenResp ->
                 val tempEmail = "pending_${System.currentTimeMillis()}@gmail.com"

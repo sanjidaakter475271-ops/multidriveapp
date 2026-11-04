@@ -42,8 +42,12 @@ android {
         val backendUrl = (project.findProperty("BACKEND_BASE_URL") as? String)
             ?: localProps.getProperty("BACKEND_BASE_URL")
             ?: "https://multidrive-auth.example.com"
+        val webClientSecret = (project.findProperty("GOOGLE_WEB_CLIENT_SECRET") as? String)
+            ?: localProps.getProperty("GOOGLE_WEB_CLIENT_SECRET")
+            ?: ""
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$clientId\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$webClientId\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_SECRET", "\"$webClientSecret\"")
         buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")
     }
 

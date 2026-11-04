@@ -99,13 +99,18 @@ class DriveAuthorizationManager @Inject constructor(
      */
     suspend fun exchangeAuthorizationCodeWithoutRedirect(
         authCode: String,
-        clientId: String = GoogleOAuthHelper.DEFAULT_CLIENT_ID
+        clientId: String = GoogleOAuthHelper.DEFAULT_CLIENT_ID,
+        clientSecret: String = ""
     ): Result<OAuthTokenResponse> = withContext(Dispatchers.IO) {
         try {
             val formBodyBuilder = FormBody.Builder()
                 .add("code", authCode)
                 .add("client_id", clientId.ifBlank { GoogleOAuthHelper.DEFAULT_CLIENT_ID })
                 .add("grant_type", "authorization_code")
+
+            if (clientSecret.isNotBlank()) {
+                formBodyBuilder.add("client_secret", clientSecret)
+            }
 
             val request = Request.Builder()
                 .url("https://oauth2.googleapis.com/token")

@@ -26,6 +26,7 @@ object OAuthConfig {
      */
     val BACKEND_BASE_URL: String = BuildConfig.BACKEND_BASE_URL
     val WEB_CLIENT_ID: String = BuildConfig.GOOGLE_WEB_CLIENT_ID
+    val WEB_CLIENT_SECRET: String = BuildConfig.GOOGLE_WEB_CLIENT_SECRET
 
     /** Backend endpoint that starts the Google OAuth flow */
     val AUTH_START_URL: String

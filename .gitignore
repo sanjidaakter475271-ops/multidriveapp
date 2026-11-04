@@ -34,3 +34,7 @@ build/
 # Native libraries
 *.so
 *.so.*
+
+# OAuth Client Credentials JSON files
+*clint id for *.json
+*.json

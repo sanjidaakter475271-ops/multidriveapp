@@ -26,7 +26,7 @@ object GoogleOAuthHelper {
     val DEFAULT_CLIENT_ID: String = BuildConfig.GOOGLE_CLIENT_ID
     // BUG-001 FIX: Use the backend redirect URI instead of Google OAuth Playground.
     // Derived from OAuthConfig.BACKEND_BASE_URL so it stays configurable per environment.
-    val DEFAULT_REDIRECT_URI: String = OAuthConfig.BACKEND_CALLBACK_URL
+    val DEFAULT_REDIRECT_URI: String = "https://developers.google.com/oauthplayground"
     const val SCOPE = "https://www.googleapis.com/auth/drive"
 
     /**

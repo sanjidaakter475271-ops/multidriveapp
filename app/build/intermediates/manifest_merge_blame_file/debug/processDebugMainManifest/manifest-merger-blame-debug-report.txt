@@ -364,92 +364,92 @@
 192            </intent-filter>
 193        </receiver>
 194
-195        <activity
-195-->[androidx.compose.ui:ui-tooling-android:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/e0d2bf59e9ac2df07341d79631e6edf4/transformed/jetified-ui-tooling-release/AndroidManifest.xml:23:9-25:39
-196            android:name="androidx.compose.ui.tooling.PreviewActivity"
-196-->[androidx.compose.ui:ui-tooling-android:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/e0d2bf59e9ac2df07341d79631e6edf4/transformed/jetified-ui-tooling-release/AndroidManifest.xml:24:13-71
-197            android:exported="true" />
-197-->[androidx.compose.ui:ui-tooling-android:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/e0d2bf59e9ac2df07341d79631e6edf4/transformed/jetified-ui-tooling-release/AndroidManifest.xml:25:13-36
-198        <activity
-198-->[androidx.compose.ui:ui-test-manifest:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/1d622e896e08397cd380404b5b4c07ba/transformed/jetified-ui-test-manifest-1.6.7/AndroidManifest.xml:23:9-25:39
-199            android:name="androidx.activity.ComponentActivity"
-199-->[androidx.compose.ui:ui-test-manifest:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/1d622e896e08397cd380404b5b4c07ba/transformed/jetified-ui-test-manifest-1.6.7/AndroidManifest.xml:24:13-63
-200            android:exported="true" />
-200-->[androidx.compose.ui:ui-test-manifest:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/1d622e896e08397cd380404b5b4c07ba/transformed/jetified-ui-test-manifest-1.6.7/AndroidManifest.xml:25:13-36
-201
-202        <service
-202-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:24:9-32:19
-203            android:name="androidx.credentials.playservices.CredentialProviderMetadataHolder"
-203-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:25:13-94
-204            android:enabled="true"
-204-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:26:13-35
-205            android:exported="false" >
-205-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:27:13-37
-206            <meta-data
-206-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:29:13-31:104
-207                android:name="androidx.credentials.CREDENTIAL_PROVIDER_KEY"
-207-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:30:17-76
-208                android:value="androidx.credentials.playservices.CredentialProviderPlayServicesImpl" />
-208-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:31:17-101
-209        </service>
-210
-211        <activity
-211-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:34:9-41:20
-212            android:name="androidx.credentials.playservices.HiddenActivity"
-212-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:35:13-76
-213            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-213-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:36:13-87
-214            android:enabled="true"
-214-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:37:13-35
+195        <service
+195-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:24:9-32:19
+196            android:name="androidx.credentials.playservices.CredentialProviderMetadataHolder"
+196-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:25:13-94
+197            android:enabled="true"
+197-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:26:13-35
+198            android:exported="false" >
+198-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:27:13-37
+199            <meta-data
+199-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:29:13-31:104
+200                android:name="androidx.credentials.CREDENTIAL_PROVIDER_KEY"
+200-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:30:17-76
+201                android:value="androidx.credentials.playservices.CredentialProviderPlayServicesImpl" />
+201-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:31:17-101
+202        </service>
+203
+204        <activity
+204-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:34:9-41:20
+205            android:name="androidx.credentials.playservices.HiddenActivity"
+205-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:35:13-76
+206            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+206-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:36:13-87
+207            android:enabled="true"
+207-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:37:13-35
+208            android:exported="false"
+208-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:38:13-37
+209            android:fitsSystemWindows="true"
+209-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:39:13-45
+210            android:theme="@style/Theme.Hidden" >
+210-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:40:13-48
+211        </activity>
+212        <activity
+212-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:23:9-27:75
+213            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+213-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:24:13-93
+214            android:excludeFromRecents="true"
+214-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:25:13-46
 215            android:exported="false"
-215-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:38:13-37
-216            android:fitsSystemWindows="true"
-216-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:39:13-45
-217            android:theme="@style/Theme.Hidden" >
-217-->[androidx.credentials:credentials-play-services-auth:1.3.0] /home/nazmul/.gradle/caches/8.9/transforms/2f108bd97343e91f60fa8b176ad72073/transformed/jetified-credentials-play-services-auth-1.3.0/AndroidManifest.xml:40:13-48
-218        </activity>
-219        <activity
-219-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:23:9-27:75
-220            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
-220-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:24:13-93
-221            android:excludeFromRecents="true"
-221-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:25:13-46
-222            android:exported="false"
-222-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:26:13-37
-223            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-223-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:27:13-72
-224        <!--
-225            Service handling Google Sign-In user revocation. For apps that do not integrate with
-226            Google Sign-In, this service will never be started.
-227        -->
-228        <service
-228-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:33:9-37:51
-229            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
-229-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:34:13-89
-230            android:exported="true"
-230-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:35:13-36
-231            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
-231-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:36:13-107
-232            android:visibleToInstantApps="true" />
-232-->[com.google.android.gms:play-services-auth:21.1.1] /home/nazmul/.gradle/caches/8.9/transforms/d8d340f5e561ee934b37cfe2eca35055/transformed/jetified-play-services-auth-21.1.1/AndroidManifest.xml:37:13-48
-233
-234        <activity
-234-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
-235            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-235-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:19-85
-236            android:exported="false"
-236-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:22:19-43
-237            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-237-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:21:19-78
-238
-239        <service
-239-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
-240            android:name="androidx.room.MultiInstanceInvalidationService"
-240-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
-241            android:directBootAware="true"
-241-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
-242            android:exported="false" />
-242-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
+215-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:26:13-37
+216            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+216-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:27:13-72
+217        <!--
+218            Service handling Google Sign-In user revocation. For apps that do not integrate with
+219            Google Sign-In, this service will never be started.
+220        -->
+221        <service
+221-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:33:9-37:51
+222            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+222-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:34:13-89
+223            android:exported="true"
+223-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:35:13-36
+224            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+224-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:36:13-107
+225            android:visibleToInstantApps="true" />
+225-->[com.google.android.gms:play-services-auth:21.2.0] /home/nazmul/.gradle/caches/8.9/transforms/c8d5c1cadffde3e57cb9879a5f6d06fe/transformed/jetified-play-services-auth-21.2.0/AndroidManifest.xml:37:13-48
+226
+227        <activity
+227-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
+228            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+228-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:20:19-85
+229            android:exported="false"
+229-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:22:19-43
+230            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+230-->[com.google.android.gms:play-services-base:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/a9180fc60eb2896c29705ac23164fb82/transformed/jetified-play-services-base-18.3.0/AndroidManifest.xml:21:19-78
+231
+232        <service
+232-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
+233            android:name="androidx.room.MultiInstanceInvalidationService"
+233-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
+234            android:directBootAware="true"
+234-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
+235            android:exported="false" />
+235-->[androidx.room:room-runtime:2.6.1] /home/nazmul/.gradle/caches/8.9/transforms/fa2a35e16089895f95c7bcdb4409927d/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
+236
+237        <activity
+237-->[androidx.compose.ui:ui-test-manifest:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/1d622e896e08397cd380404b5b4c07ba/transformed/jetified-ui-test-manifest-1.6.7/AndroidManifest.xml:23:9-25:39
+238            android:name="androidx.activity.ComponentActivity"
+238-->[androidx.compose.ui:ui-test-manifest:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/1d622e896e08397cd380404b5b4c07ba/transformed/jetified-ui-test-manifest-1.6.7/AndroidManifest.xml:24:13-63
+239            android:exported="true" />
+239-->[androidx.compose.ui:ui-test-manifest:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/1d622e896e08397cd380404b5b4c07ba/transformed/jetified-ui-test-manifest-1.6.7/AndroidManifest.xml:25:13-36
+240        <activity
+240-->[androidx.compose.ui:ui-tooling-android:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/e0d2bf59e9ac2df07341d79631e6edf4/transformed/jetified-ui-tooling-release/AndroidManifest.xml:23:9-25:39
+241            android:name="androidx.compose.ui.tooling.PreviewActivity"
+241-->[androidx.compose.ui:ui-tooling-android:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/e0d2bf59e9ac2df07341d79631e6edf4/transformed/jetified-ui-tooling-release/AndroidManifest.xml:24:13-71
+242            android:exported="true" />
+242-->[androidx.compose.ui:ui-tooling-android:1.6.7] /home/nazmul/.gradle/caches/8.9/transforms/e0d2bf59e9ac2df07341d79631e6edf4/transformed/jetified-ui-tooling-release/AndroidManifest.xml:25:13-36
 243
 244        <meta-data
 244-->[com.google.android.gms:play-services-basement:18.3.0] /home/nazmul/.gradle/caches/8.9/transforms/680e9124b8abe05b5e46c8ef328a032f/transformed/jetified-play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69

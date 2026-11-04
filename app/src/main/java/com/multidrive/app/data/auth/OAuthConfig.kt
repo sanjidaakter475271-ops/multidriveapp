@@ -25,6 +25,7 @@ object OAuthConfig {
      * they are not Kotlin compile-time constants and cannot initialize a `const val`.
      */
     val BACKEND_BASE_URL: String = BuildConfig.BACKEND_BASE_URL
+    val WEB_CLIENT_ID: String = BuildConfig.GOOGLE_WEB_CLIENT_ID
 
     /** Backend endpoint that starts the Google OAuth flow */
     val AUTH_START_URL: String

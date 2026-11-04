@@ -2,6 +2,8 @@ package com.multidrive.app.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.multidrive.app.data.auth.AuthorizationClientHelper
+import com.multidrive.app.data.auth.AuthorizationOutcome
 import com.multidrive.app.data.auth.DriveAuthorizationManager
 import com.multidrive.app.domain.model.Account
 import com.multidrive.app.domain.repository.AccountRepository
@@ -21,6 +23,10 @@ sealed interface AddAccountState {
     data class Error(val message: String) : AddAccountState
 }
 
+sealed interface AuthorizationEvent {
+    data class Consent(val pendingIntent: android.app.PendingIntent) : AuthorizationEvent
+}
+
 @HiltViewModel
 class AccountsViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
@@ -28,7 +34,8 @@ class AccountsViewModel @Inject constructor(
     private val removeAccountUseCase: RemoveAccountUseCase,
     private val syncAccountUseCase: SyncAccountUseCase,
     private val refreshQuotaUseCase: RefreshQuotaUseCase,
-    private val authManager: DriveAuthorizationManager
+    private val authManager: DriveAuthorizationManager,
+    private val authClientHelper: AuthorizationClientHelper
 ) : ViewModel() {
 
     val accounts: StateFlow<List<Account>> = accountRepository.getAllAccounts()
@@ -40,23 +47,93 @@ class AccountsViewModel @Inject constructor(
     private val _testConnectionState = MutableStateFlow<String?>(null)
     val testConnectionState: StateFlow<String?> = _testConnectionState.asStateFlow()
 
-    /**
-     * Called from MainActivity when the deep link multidrive://auth-done?account=email arrives.
-     * The backend has already exchanged the code and stored tokens server-side.
-     * The app uses the email to fetch the account from the backend /api/account/{email} endpoint,
-     * OR reads the token that the backend saved to the app's secure store via a shared session.
-     *
-     * For now: triggers AddAccountUseCase which calls getAbout with whatever token the
-     * backend saved for this email (backend should POST the token to the app's local API or
-     * store it via a pre-shared mechanism). Falls back to prompting user to enter token if needed.
-     */
+    private val _authorizationEvent = MutableStateFlow<AuthorizationEvent?>(null)
+    val authorizationEvent: StateFlow<AuthorizationEvent?> = _authorizationEvent.asStateFlow()
+
+    fun requestAuthorization() {
+        viewModelScope.launch {
+            _addAccountState.value = AddAccountState.Loading
+            val outcome = try {
+                authClientHelper.authorize(authClientHelper.buildRequest())
+            } catch (e: Exception) {
+                AuthorizationOutcome.Failed(e.message ?: "Authorization failed")
+            }
+            when (outcome) {
+                is AuthorizationOutcome.Authorized -> {
+                    _authorizationEvent.value = null
+                    completeFromAuthCode(outcome.authCode)
+                }
+                is AuthorizationOutcome.NeedsConsent -> {
+                    _authorizationEvent.value = AuthorizationEvent.Consent(outcome.pendingIntent)
+                }
+                is AuthorizationOutcome.Failed -> {
+                    _authorizationEvent.value = null
+                    _addAccountState.value = AddAccountState.Error(outcome.message)
+                }
+            }
+        }
+    }
+
+    fun handleConsentResult(resultCode: Int, data: android.content.Intent?) {
+        viewModelScope.launch {
+            val outcome = authClientHelper.onActivityResult(resultCode, data)
+            when (outcome) {
+                is AuthorizationOutcome.Authorized -> {
+                    _authorizationEvent.value = null
+                    completeFromAuthCode(outcome.authCode)
+                }
+                is AuthorizationOutcome.Failed -> {
+                    _authorizationEvent.value = null
+                    _addAccountState.value = AddAccountState.Error(outcome.message)
+                }
+                is AuthorizationOutcome.NeedsConsent -> {
+                    _authorizationEvent.value = AuthorizationEvent.Consent(outcome.pendingIntent)
+                }
+            }
+        }
+    }
+
+    fun isGooglePlayServicesAvailable(): Boolean = authClientHelper.isGooglePlayServicesAvailable()
+
+    fun consumeAuthorizationEvent() {
+        _authorizationEvent.value = null
+    }
+
+    private suspend fun completeFromAuthCode(authCode: String) {
+        val exchangeResult = authManager.exchangeAuthorizationCodeWithoutRedirect(authCode.trim())
+        exchangeResult.fold(
+            onSuccess = { tokenResp ->
+                val tempEmail = "pending_${System.currentTimeMillis()}@gmail.com"
+                authManager.saveToken(tempEmail, tokenResp.accessToken, tokenResp.refreshToken)
+                val addResult = addAccountUseCase(
+                    googleAccountId = tempEmail,
+                    email = tempEmail,
+                    displayName = "",
+                    photoUrl = null,
+                    refreshToken = tokenResp.refreshToken,
+                    expiresInSeconds = tokenResp.expiresInSeconds
+                )
+                addResult.fold(
+                    onSuccess = { account ->
+                        syncAccountUseCase(account.id)
+                        _addAccountState.value = AddAccountState.Success(account)
+                    },
+                    onFailure = { error ->
+                        _addAccountState.value = AddAccountState.Error("Failed to add account: ${error.message}")
+                    }
+                )
+            },
+            onFailure = { error ->
+                _addAccountState.value = AddAccountState.Error(error.message ?: "OAuth Code Exchange failed")
+            }
+        )
+    }
+
     fun syncNewAccountFromBackend(email: String) {
         viewModelScope.launch {
             _addAccountState.value = AddAccountState.Loading
             val token = authManager.getAccessToken(email)
             if (token.isNullOrBlank()) {
-                // Token not yet available locally — user may need to manually enter it
-                // or the backend must push it. Show informational success for now.
                 _addAccountState.value = AddAccountState.Error(
                     "Account '$email' authorized! Enter the access token below to complete setup."
                 )
@@ -84,10 +161,6 @@ class AccountsViewModel @Inject constructor(
         _addAccountState.value = AddAccountState.Error(message)
     }
 
-    /**
-     * Manual access token entry — user provides email + access token directly.
-     * Optional refresh token for automatic renewal.
-     */
     fun addAccount(
         email: String,
         displayName: String,
@@ -120,9 +193,6 @@ class AccountsViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Auth Code exchange flow — user pastes the authorization code from the browser callback.
-     */
     fun addAccountFromAuthCode(authCode: String, displayName: String = "") {
         viewModelScope.launch {
             _addAccountState.value = AddAccountState.Loading

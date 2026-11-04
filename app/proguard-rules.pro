@@ -23,3 +23,7 @@
 
 # Coroutines
 -dontwarn kotlinx.coroutines.**
+
+# Play Services Authorization Client
+-keep class com.google.android.gms.auth.api.identity.** { *; }
+-dontwarn com.google.android.gms.auth.api.identity.**

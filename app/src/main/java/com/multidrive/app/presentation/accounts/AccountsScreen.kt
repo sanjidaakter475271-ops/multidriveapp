@@ -1,5 +1,8 @@
 package com.multidrive.app.presentation.accounts
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.IntentSenderRequest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +25,8 @@ import com.multidrive.app.data.auth.GoogleOAuthHelper
 import com.multidrive.app.domain.model.Account
 import com.multidrive.app.presentation.viewmodel.AddAccountState
 import com.multidrive.app.presentation.viewmodel.AccountsViewModel
+import com.multidrive.app.presentation.viewmodel.AuthorizationEvent
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +39,7 @@ fun AccountsScreen(
     val accounts by viewModel.accounts.collectAsState(initial = emptyList())
     val addState by viewModel.addAccountState.collectAsState()
     val testMessage by viewModel.testConnectionState.collectAsState()
+    val authorizationEvent by viewModel.authorizationEvent.collectAsState()
 
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Auth Code (Google Sign-In), 1: Direct Access Token
@@ -46,6 +52,23 @@ fun AccountsScreen(
     var refreshTokenInput by remember { mutableStateOf("") }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    val consentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { request ->
+        viewModel.handleConsentResult(request.resultCode, request.data)
+    }
+
+    LaunchedEffect(authorizationEvent) {
+        val event = authorizationEvent
+        if (event is AuthorizationEvent.Consent) {
+            viewModel.consumeAuthorizationEvent()
+            consentLauncher.launch(
+                IntentSenderRequest.Builder(event.pendingIntent.intentSender).build()
+            )
+        }
+    }
 
     LaunchedEffect(addState) {
         when (val state = addState) {
@@ -181,9 +204,33 @@ fun AccountsScreen(
                             // Tab 0: Direct Real Google OAuth Consent Page (response_type=code)
                             Button(
                                 onClick = {
+                                    if (viewModel.isGooglePlayServicesAvailable()) {
+                                        viewModel.requestAuthorization()
+                                    } else {
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Google Play Services not available. Using browser flow.")
+                                        }
+                                        GoogleOAuthHelper.launchGoogleOAuthBrowser(context)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(Icons.Default.Security, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Authorize Google Drive (Pop-up)")
+                            }
+
+                            Button(
+                                onClick = {
                                     GoogleOAuthHelper.launchGoogleOAuthBrowser(context)
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondary
+                                )
                             ) {
                                 Icon(Icons.Default.OpenInBrowser, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))

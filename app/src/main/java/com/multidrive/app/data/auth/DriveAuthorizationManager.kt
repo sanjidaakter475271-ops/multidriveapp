@@ -94,6 +94,44 @@ class DriveAuthorizationManager @Inject constructor(
     }
 
     /**
+     * Exchanges an Identity API Authorization Code (from AuthorizationClient) without redirect_uri.
+     * AuthorizationClient codes must omit redirect_uri — Google rejects mismatched redirect URIs.
+     */
+    suspend fun exchangeAuthorizationCodeWithoutRedirect(
+        authCode: String,
+        clientId: String = GoogleOAuthHelper.DEFAULT_CLIENT_ID
+    ): Result<OAuthTokenResponse> = withContext(Dispatchers.IO) {
+        try {
+            val formBodyBuilder = FormBody.Builder()
+                .add("code", authCode)
+                .add("client_id", clientId.ifBlank { GoogleOAuthHelper.DEFAULT_CLIENT_ID })
+                .add("grant_type", "authorization_code")
+
+            val request = Request.Builder()
+                .url("https://oauth2.googleapis.com/token")
+                .post(formBodyBuilder.build())
+                .build()
+
+            val response = okHttpClient.newCall(request).execute()
+            val responseBody = response.body?.string() ?: ""
+
+            if (response.isSuccessful) {
+                val json = JSONObject(responseBody)
+                val accessToken = json.getString("access_token")
+                val refreshToken = json.optString("refresh_token", null)
+                val expiresInSeconds = json.optLong("expires_in", 3600L)
+                response.close()
+                Result.success(OAuthTokenResponse(accessToken, refreshToken, expiresInSeconds))
+            } else {
+                response.close()
+                Result.failure(Exception("OAuth token exchange failed (HTTP ${response.code}): $responseBody"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Calls Google OAuth token endpoint (https://oauth2.googleapis.com/token) with grant_type=refresh_token
      * to obtain a new access_token.
      *

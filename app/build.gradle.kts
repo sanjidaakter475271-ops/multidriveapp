@@ -35,10 +35,14 @@ android {
         val clientId = (project.findProperty("GOOGLE_CLIENT_ID") as? String)
             ?: localProps.getProperty("GOOGLE_CLIENT_ID")
             ?: "1053073934306-multidrive.apps.googleusercontent.com"
+        val webClientId = (project.findProperty("GOOGLE_WEB_CLIENT_ID") as? String)
+            ?: localProps.getProperty("GOOGLE_WEB_CLIENT_ID")
+            ?: ""
         val backendUrl = (project.findProperty("BACKEND_BASE_URL") as? String)
             ?: localProps.getProperty("BACKEND_BASE_URL")
             ?: "https://multidrive-auth.example.com"
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$clientId\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$webClientId\"")
         buildConfigField("String", "BACKEND_BASE_URL", "\"$backendUrl\"")
     }
 
@@ -119,6 +123,9 @@ dependencies {
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
+    // Play Services Authorization Client
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Security Crypto
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

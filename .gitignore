@@ -15,3 +15,22 @@
 local.properties
 Reference
 .dev/docs/
+
+# Android build artifacts
+*.apk
+*.aab
+*.aar
+*.ap_
+*.jar
+
+# Gradle
+.gradle/
+build/
+!build.gradle
+
+# Keystore
+*.keystore
+
+# Native libraries
+*.so
+*.so.*
